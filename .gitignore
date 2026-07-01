@@ -3,3 +3,8 @@ dist/
 .env
 *.log
 .DS_Store
+coverage/
+*.md
+.mimocode/
+session-*
+Enterprise *

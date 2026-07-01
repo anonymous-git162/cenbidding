@@ -1,0 +1,24 @@
+{
+  "name": "ebidding-final",
+  "private": true,
+  "scripts": {
+    "prepare": "husky",
+    "lint": "cd backend && npm run lint && cd ../frontend && npm run lint",
+    "typecheck": "cd backend && npx tsc --noEmit && cd ../frontend && npx tsc --noEmit",
+    "test": "cd backend && npm test && cd ../frontend && npm test"
+  },
+  "devDependencies": {
+    "husky": "^9.0.0",
+    "lint-staged": "^15.0.0"
+  },
+  "lint-staged": {
+    "backend/src/**/*.ts": [
+      "cd backend && npx eslint --fix",
+      "cd backend && npx tsc --noEmit"
+    ],
+    "frontend/src/**/*.{ts,tsx}": [
+      "cd frontend && npx eslint --fix",
+      "cd frontend && npx tsc --noEmit"
+    ]
+  }
+}
