@@ -1,29 +1,70 @@
-import { Controller, Get, Post, Put, Body, Param, Request, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Body,
+  Param,
+  Request,
+  UseGuards,
+  BadRequestException,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { RfqSubmissionService } from './rfq-submission.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
 
 @ApiTags('RFQ Submissions')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('rfq-submissions')
 export class RfqSubmissionController {
-  constructor(private submissionService: RfqSubmissionService) {}
+  constructor(
+    private submissionService: RfqSubmissionService,
+    private prisma: PrismaService,
+  ) {}
 
   @Post()
   @Roles(UserRole.VENDOR)
   @ApiOperation({ summary: 'Create a new submission' })
-  create(@Body() body: { procurementId: string; vendorId: string; price: number; proposalText?: string; fileIds?: string[] }) {
-    return this.submissionService.create(body.procurementId, body.vendorId, body.price, body.proposalText);
+  async create(
+    @Body()
+    body: {
+      procurementId: string;
+      price: number;
+      proposalText?: string;
+      fileIds?: string[];
+    },
+    @Request() req: any,
+  ) {
+    const vendor = await this.prisma.vendor.findUnique({
+      where: { userId: req.user.id },
+    });
+    if (!vendor) throw new BadRequestException('Vendor profile not found');
+    return this.submissionService.create(
+      body.procurementId,
+      vendor.id,
+      body.price,
+      body.proposalText,
+    );
   }
 
   @Put(':id')
   @Roles(UserRole.VENDOR)
   @ApiOperation({ summary: 'Update a draft submission' })
-  update(@Param('id') id: string, @Body() body: { price?: number; proposalText?: string }, @Request() req: any) {
-    return this.submissionService.update(id, req.user.id, body.price, body.proposalText);
+  update(
+    @Param('id') id: string,
+    @Body() body: { price?: number; proposalText?: string },
+    @Request() req: any,
+  ) {
+    return this.submissionService.update(
+      id,
+      req.user.id,
+      body.price,
+      body.proposalText,
+    );
   }
 
   @Put(':id/submit')
@@ -35,7 +76,9 @@ export class RfqSubmissionController {
 
   @Get('procurement/:procurementId')
   @Roles(UserRole.PROCUREMENT, UserRole.ADMIN)
-  @ApiOperation({ summary: 'Get submissions for procurement (procurement role)' })
+  @ApiOperation({
+    summary: 'Get submissions for procurement (procurement role)',
+  })
   findByProcurement(@Param('procurementId') procurementId: string) {
     return this.submissionService.findByProcurement(procurementId);
   }
