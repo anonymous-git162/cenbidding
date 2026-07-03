@@ -10,14 +10,16 @@ ebidding-final/
 │   │   └── database/ # PrismaService
 │   ├── test/         # E2E tests + prisma-mock
 │   └── prisma/       # Schema + seed
-└── frontend/         # React 19 + Vite + MUI 5
-    └── src/
-        ├── pages/    # Page components (one per route)
-        ├── components/ # Shared components (Icon, StatusBadge)
-        ├── contexts/ # AuthContext, ThemeContext
-        ├── hooks/    # useSocket
-        ├── services/ # api.ts (axios)
-        └── test/     # Vitest tests
+├── frontend/         # React 19 + Vite + MUI 5
+│   └── src/
+│       ├── pages/    # Page components (one per route)
+│       ├── components/ # Shared components (Icon, StatusBadge)
+│       ├── contexts/ # AuthContext, ThemeContext
+│       ├── hooks/    # useSocket
+│       ├── services/ # api.ts (axios)
+│       └── test/     # Vitest tests
+└── docs/             # Workflow documentation
+    └── 04-workflow.md # State machine, transitions, workflow sections
 ```
 
 ## Commands
@@ -39,6 +41,12 @@ ebidding-final/
 | `npm run test:watch` | Watch mode |
 | `npm run build` | Vite build |
 | `npx tsc --noEmit` | TypeScript check |
+| `npx playwright test` | Run Playwright e2e tests |
+
+### Other
+| Command | Description |
+|---------|-------------|
+| `npm test` | Run root-level checks |
 
 ## Coding Conventions
 
@@ -66,6 +74,17 @@ ebidding-final/
 - Token storage: `sessionStorage` (not `localStorage`)
 - Auth guards required on ALL controllers
 - Error messages must not leak system details
+
+## Test Results (July 2026)
+
+| Suite | Type | Count | Status |
+|-------|------|-------|--------|
+| Backend unit tests | Jest | 367 (43 suites) | ✅ Passed |
+| Frontend unit tests | Vitest | 179 (28 files) | ✅ Passed |
+| Backend TypeScript | `tsc --noEmit` | — | ✅ Clean |
+| Frontend TypeScript | `tsc --noEmit` | — | ✅ Clean |
+| Backend e2e | Supertest | 101 (14 suites) | ✅ Passed |
+| Playwright e2e | Playwright | 49 | ✅ Passed |
 
 ## Test Patterns
 
