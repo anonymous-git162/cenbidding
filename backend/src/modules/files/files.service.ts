@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { validateMagicBytes } from '../../common/helpers/magic-bytes';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -26,7 +27,14 @@ export class FilesService {
   async upload(file: Express.Multer.File, uploadedBy: string) {
     if (!file) throw new BadRequestException('No file provided');
     if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-      throw new BadRequestException(`File type ${file.mimetype} is not allowed`);
+      throw new BadRequestException(
+        `File type ${file.mimetype} is not allowed`,
+      );
+    }
+    if (!validateMagicBytes(file.buffer, file.mimetype)) {
+      throw new BadRequestException(
+        'File content does not match declared file type',
+      );
     }
     if (file.size > MAX_FILE_SIZE) {
       throw new BadRequestException('File size exceeds 10MB limit');
@@ -36,7 +44,9 @@ export class FilesService {
     if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
     let decodedName = path.basename(file.originalname);
-    try { decodedName = decodeURIComponent(path.basename(file.originalname)); } catch {}
+    try {
+      decodedName = decodeURIComponent(path.basename(file.originalname));
+    } catch { /* empty */ }
     const safeName = decodedName.replace(/[^a-zA-Z0-9._-]/g, '_');
     const fileName = `${Date.now()}-${safeName}`;
     const filePath = path.join(uploadDir, fileName);
@@ -64,7 +74,13 @@ export class FilesService {
     return this.prisma.file.findMany({
       where: { uploadedBy: userId },
       orderBy: { createdAt: 'desc' },
-      select: { id: true, fileName: true, mimeType: true, fileSize: true, createdAt: true },
+      select: {
+        id: true,
+        fileName: true,
+        mimeType: true,
+        fileSize: true,
+        createdAt: true,
+      },
     });
   }
 

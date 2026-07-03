@@ -1,5 +1,13 @@
 import {
-  Controller, Get, Post, Patch, Body, Param, Query, Request, UseGuards,
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Body,
+  Param,
+  Query,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -7,8 +15,11 @@ import { UserRole } from '@prisma/client';
 import { ProcurementsService } from './procurements.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import {
-  CreateProcurementDto, UpdateProcurementDto, QueryProcurementDto,
-  ReviewDto, PublishDto, FinalDecisionDto,
+  CreateProcurementDto,
+  UpdateProcurementDto,
+  QueryProcurementDto,
+  ReviewDto,
+  PublishDto,
 } from './dto/procurement.dto';
 
 @ApiTags('Procurements')
@@ -53,7 +64,11 @@ export class ProcurementsController {
   @Patch(':id')
   @Roles(UserRole.REQUESTER, UserRole.PROCUREMENT)
   @ApiOperation({ summary: 'Update procurement draft' })
-  update(@Param('id') id: string, @Body() dto: UpdateProcurementDto, @Request() req: any) {
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateProcurementDto,
+    @Request() req: any,
+  ) {
     return this.procurementsService.update(id, dto, req.user.id);
   }
 
@@ -66,7 +81,9 @@ export class ProcurementsController {
 
   @Post(':id/review/start')
   @Roles(UserRole.PROCUREMENT)
-  @ApiOperation({ summary: 'Start procurement review (SUBMITTED → UNDER_PROCUREMENT_REVIEW)' })
+  @ApiOperation({
+    summary: 'Start procurement review (SUBMITTED → UNDER_PROCUREMENT_REVIEW)',
+  })
   startReview(@Param('id') id: string, @Request() req: any) {
     return this.procurementsService.startReview(id, req.user.id);
   }
@@ -74,29 +91,49 @@ export class ProcurementsController {
   @Post(':id/review/approve')
   @Roles(UserRole.PROCUREMENT)
   @ApiOperation({ summary: 'Approve procurement review' })
-  approveReview(@Param('id') id: string, @Body() dto: ReviewDto, @Request() req: any) {
+  approveReview(
+    @Param('id') id: string,
+    @Body() dto: ReviewDto,
+    @Request() req: any,
+  ) {
     return this.procurementsService.approveReview(id, req.user.id, dto.comment);
   }
 
   @Post(':id/review/return')
   @Roles(UserRole.PROCUREMENT)
   @ApiOperation({ summary: 'Return procurement for revision' })
-  returnReview(@Param('id') id: string, @Body() dto: ReviewDto, @Request() req: any) {
+  returnReview(
+    @Param('id') id: string,
+    @Body() dto: ReviewDto,
+    @Request() req: any,
+  ) {
     return this.procurementsService.returnReview(id, req.user.id, dto.reason);
   }
 
   @Post(':id/review/reject')
   @Roles(UserRole.PROCUREMENT)
   @ApiOperation({ summary: 'Reject procurement' })
-  rejectReview(@Param('id') id: string, @Body() dto: ReviewDto, @Request() req: any) {
+  rejectReview(
+    @Param('id') id: string,
+    @Body() dto: ReviewDto,
+    @Request() req: any,
+  ) {
     return this.procurementsService.rejectReview(id, req.user.id, dto.reason);
   }
 
   @Post(':id/publish')
   @Roles(UserRole.PROCUREMENT)
   @ApiOperation({ summary: 'Publish procurement for vendor participation' })
-  publish(@Param('id') id: string, @Body() dto: PublishDto, @Request() req: any) {
-    return this.procurementsService.publish(id, req.user.id, dto.submissionDeadline);
+  publish(
+    @Param('id') id: string,
+    @Body() dto: PublishDto,
+    @Request() req: any,
+  ) {
+    return this.procurementsService.publish(
+      id,
+      req.user.id,
+      dto.submissionDeadline,
+    );
   }
 
   @Post(':id/cancel')
@@ -151,19 +188,50 @@ export class ProcurementsController {
   @Post(':id/approval/approve')
   @Roles(UserRole.APPROVER, UserRole.ADMIN)
   @ApiOperation({ summary: 'Approve procurement (final approval)' })
-  approveProcurement(@Param('id') id: string, @Body() dto: ReviewDto, @Request() req: any) {
-    return this.procurementsService.approveProcurement(id, req.user.id, dto.comment);
+  approveProcurement(
+    @Param('id') id: string,
+    @Body() dto: ReviewDto,
+    @Request() req: any,
+  ) {
+    return this.procurementsService.approveProcurement(
+      id,
+      req.user.id,
+      dto.comment,
+    );
   }
 
   @Post(':id/award/announce')
   @Roles(UserRole.PROCUREMENT)
   @ApiOperation({ summary: 'Announce award winner' })
-  announceAward(@Param('id') id: string, @Body() body: { winningVendorId: string; announcementText: string }, @Request() req: any) {
-    return this.procurementsService.announceAward(id, req.user.id, body.winningVendorId, body.announcementText);
+  announceAward(
+    @Param('id') id: string,
+    @Body() body: { winningVendorId: string; announcementText: string },
+    @Request() req: any,
+  ) {
+    return this.procurementsService.announceAward(
+      id,
+      req.user.id,
+      body.winningVendorId,
+      body.announcementText,
+    );
+  }
+
+  @Post(':id/approval/resubmit')
+  @Roles(UserRole.PROCUREMENT)
+  @ApiOperation({ summary: 'Resubmit for approval after revision' })
+  resubmitForApproval(@Param('id') id: string, @Request() req: any) {
+    return this.procurementsService.resubmitForApproval(id, req.user.id);
+  }
+
+  @Post(':id/contract/send')
+  @Roles(UserRole.PROCUREMENT)
+  @ApiOperation({ summary: 'Send contract to winning vendor' })
+  sendContract(@Param('id') id: string, @Request() req: any) {
+    return this.procurementsService.sendContract(id, req.user.id);
   }
 
   @Post(':id/award/complete')
-  @Roles(UserRole.PROCUREMENT)
+  @Roles(UserRole.PROCUREMENT, UserRole.APPROVER, UserRole.ADMIN)
   @ApiOperation({ summary: 'Mark procurement as completed' })
   completeProcurement(@Param('id') id: string, @Request() req: any) {
     return this.procurementsService.completeProcurement(id, req.user.id);

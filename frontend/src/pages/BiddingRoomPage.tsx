@@ -1,18 +1,14 @@
 import { Icon } from '../components/Icon';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Box, Card, CardContent, Typography, Button, TextField, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, Alert, Chip, Dialog, DialogTitle,
-  DialogContent, DialogActions, Divider, LinearProgress, CircularProgress,
+  DialogContent, DialogActions, Divider, LinearProgress,
 } from '@mui/material';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-
-const CURRENCIES: Record<string, { symbol: string }> = {
-  USD: { symbol: '$' }, EUR: { symbol: '€' }, GBP: { symbol: '£' }, THB: { symbol: '฿' },
-  JPY: { symbol: '¥' }, CNY: { symbol: '¥' }, SGD: { symbol: 'S$' }, AUD: { symbol: 'A$' },
-  CAD: { symbol: 'C$' }, MYR: { symbol: 'RM' }, IDR: { symbol: 'Rp' },
-};
+import { CURRENCY_MAP } from '../utils/constants';
+import FileUploader from '../components/FileUploader';
 
 interface Bid {
   id: string;
@@ -43,14 +39,13 @@ export default function BiddingRoomPage() {
   const [error, setError] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [attachments, setAttachments] = useState<{ id: string; fileName: string; fileSize: number }[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [fileAttachments, setFileAttachments] = useState<{ id: string; fileName: string; fileSize: number }[]>([]);
+  const [fileUploadKey, setFileUploadKey] = useState(0);
 
   const getCurrencySymbol = () => {
     const proc = procurements.find(p => p.id === procurementId);
     const code = proc?.currency || 'USD';
-    return CURRENCIES[code]?.symbol || '$';
+    return CURRENCY_MAP[code]?.symbol || '$';
   };
 
   const getCurrencyCode = () => {
@@ -118,42 +113,24 @@ export default function BiddingRoomPage() {
   };
 
   const openRound = async (id: string) => {
-    try { await api.post(`/ebidding/rounds/${id}/open`); loadRounds(); } catch (err: any) { setError(err.response?.data?.message); }
+    try { await api.post(`/ebidding/rounds/${id}/open`); loadRounds(); } catch (err: any) { setError(err.response?.data?.message || 'Failed to open round'); }
   };
 
   const closeRound = async (id: string) => {
-    try { await api.post(`/ebidding/rounds/${id}/close`); loadRounds(); } catch (err: any) { setError(err.response?.data?.message); }
+    try { await api.post(`/ebidding/rounds/${id}/close`); loadRounds(); } catch (err: any) { setError(err.response?.data?.message || 'Failed to close round'); }
   };
 
   const placeBid = async () => {
     if (!selectedRound || !bidAmount) return;
     try {
-      await api.post('/ebidding/bid', { roundId: selectedRound.id, bidAmount: parseFloat(bidAmount), fileIds: attachments.map(a => a.id) });
+      await api.post('/ebidding/bid', { roundId: selectedRound.id, bidAmount: parseFloat(bidAmount), fileIds: fileAttachments.map(a => a.id) });
       setBidAmount('');
-      setAttachments([]);
+      setFileAttachments([]);
+      setFileUploadKey(k => k + 1);
       loadRoundBids();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to place bid');
     }
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 10 * 1024 * 1024) { setError('File size must be under 10MB'); return; }
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const res = await api.post('/files/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-      setAttachments(prev => [...prev, { id: res.data.id, fileName: res.data.fileName, fileSize: res.data.fileSize }]);
-    } catch { setError('Failed to upload file'); }
-    finally { setUploading(false); if (fileInputRef.current) fileInputRef.current.value = ''; }
-  };
-
-  const handleRemoveAttachment = async (id: string) => {
-    try { await api.delete(`/files/${id}`); } catch {}
-    setAttachments(prev => prev.filter(a => a.id !== id));
   };
 
   const getStatusColor = (status: string) => {
@@ -215,7 +192,7 @@ export default function BiddingRoomPage() {
                   borderColor: selectedRound?.id === round.id ? 'primary.main' : 'divider',
                   cursor: 'pointer',
                   transition: 'all 0.2s',
-                  '&:hover': { borderColor: 'primary.main', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' },
+                  '&:hover': { borderColor: 'primary.main' },
                 }}
                 onClick={() => setSelectedRound(round)}
               >
@@ -381,25 +358,7 @@ export default function BiddingRoomPage() {
                       </Button>
                     </Box>
                     <Box sx={{ mt: 1.5 }}>
-                      <input ref={fileInputRef} type="file" hidden onChange={handleFileUpload} />
-                      <Button variant="outlined" size="small" startIcon={uploading ? <CircularProgress size={16} /> : <Icon name="AttachFile" />} onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-                        {uploading ? 'Uploading...' : 'Attach File'}
-                      </Button>
-                      <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>Max 10MB</Typography>
-                      {attachments.length > 0 && (
-                        <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                          {attachments.map(att => (
-                            <Box key={att.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, bgcolor: 'action.hover', border: '1px solid', borderColor: 'divider', borderRadius: 1, px: 1.5, py: 0.5 }}>
-                              <Icon name="Description" sx={{ fontSize: 18, color: 'text.secondary' }} />
-                              <Typography variant="body2" sx={{ flex: 1 }}>{att.fileName}</Typography>
-                              <Typography variant="caption" color="text.secondary">{(att.fileSize / 1024).toFixed(0)}KB</Typography>
-                              <Button size="small" color="error" onClick={() => handleRemoveAttachment(att.id)} sx={{ minWidth: 0, p: 0 }}>
-                                <Icon name="Close" sx={{ fontSize: 16 }} />
-                              </Button>
-                            </Box>
-                          ))}
-                        </Box>
-                      )}
+                      <FileUploader key={fileUploadKey} onAttachmentsChange={setFileAttachments} />
                     </Box>
                     {roundBids.length > 0 && parseFloat(bidAmount) >= roundBids[0].bidAmount && bidAmount && (
                       <Alert severity="warning" sx={{ mt: 1 }}>Bid must be less than the current lowest bid of {getCurrencySymbol()}{roundBids[0].bidAmount.toLocaleString()}</Alert>

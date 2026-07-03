@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 
 @Injectable()
@@ -9,9 +13,13 @@ export class EbiddingService {
     const acceptedCount = await this.prisma.vendorInvitation.count({
       where: { procurementId, invitationStatus: 'ACCEPTED' },
     });
-    console.log(`[E-Bidding] Vendor count check: procurement=${procurementId}, accepted=${acceptedCount}, minimum=2`);
+    console.log(
+      `[E-Bidding] Vendor count check: procurement=${procurementId}, accepted=${acceptedCount}, minimum=2`,
+    );
     if (acceptedCount < 2) {
-      console.log(`[E-Bidding] BLOCKED: Only ${acceptedCount} vendor(s) accepted, need at least 2`);
+      console.log(
+        `[E-Bidding] BLOCKED: Only ${acceptedCount} vendor(s) accepted, need at least 2`,
+      );
       throw new BadRequestException(
         `At least 2 vendors must accept invitations before starting e-bidding. Currently ${acceptedCount} vendor(s) accepted.`,
       );
@@ -42,16 +50,21 @@ export class EbiddingService {
     });
   }
 
-  async openRound(id: string, userId: string) {
+  async openRound(id: string, _userId: string) {
     const round = await this.prisma.ebiddingRound.findUnique({ where: { id } });
     if (!round) throw new NotFoundException('Round not found');
-    if (round.status !== 'PENDING') throw new BadRequestException('Round is not pending');
+    if (round.status !== 'PENDING')
+      throw new BadRequestException('Round is not pending');
 
     await this.checkMinVendors(round.procurementId);
 
     // Close all other OPEN rounds for this procurement
     await this.prisma.ebiddingRound.updateMany({
-      where: { procurementId: round.procurementId, status: 'OPEN', id: { not: id } },
+      where: {
+        procurementId: round.procurementId,
+        status: 'OPEN',
+        id: { not: id },
+      },
       data: { status: 'CLOSED', endsAt: new Date() },
     });
 
@@ -61,10 +74,11 @@ export class EbiddingService {
     });
   }
 
-  async closeRound(id: string, userId: string) {
+  async closeRound(id: string, _userId: string) {
     const round = await this.prisma.ebiddingRound.findUnique({ where: { id } });
     if (!round) throw new NotFoundException('Round not found');
-    if (round.status !== 'OPEN') throw new BadRequestException('Round is not open');
+    if (round.status !== 'OPEN')
+      throw new BadRequestException('Round is not open');
 
     return this.prisma.ebiddingRound.update({
       where: { id },
@@ -73,28 +87,43 @@ export class EbiddingService {
   }
 
   async placeBid(roundId: string, vendorUserId: string, bidAmount: number) {
-    const round = await this.prisma.ebiddingRound.findUnique({ where: { id: roundId } });
+    const round = await this.prisma.ebiddingRound.findUnique({
+      where: { id: roundId },
+    });
     if (!round) throw new NotFoundException('Round not found');
-    if (round.status !== 'OPEN') throw new BadRequestException('Round is not open');
+    if (round.status !== 'OPEN')
+      throw new BadRequestException('Round is not open');
 
-    const vendor = await this.prisma.vendor.findUnique({ where: { userId: vendorUserId } });
+    const vendor = await this.prisma.vendor.findUnique({
+      where: { userId: vendorUserId },
+    });
     if (!vendor) throw new NotFoundException('Vendor not found');
 
     // Prevent vendor from bidding on their own procurement
-    const procurement = await this.prisma.procurement.findUnique({ where: { id: round.procurementId } });
+    const procurement = await this.prisma.procurement.findUnique({
+      where: { id: round.procurementId },
+    });
     if (procurement && procurement.requesterId === vendorUserId) {
       throw new BadRequestException('Cannot bid on your own procurement');
     }
 
     // Reject bids after submission deadline
-    if (procurement?.submissionDeadline && new Date() > new Date(procurement.submissionDeadline)) {
+    if (
+      procurement?.submissionDeadline &&
+      new Date() > new Date(procurement.submissionDeadline)
+    ) {
       throw new BadRequestException('Submission deadline has passed');
     }
 
     const invitation = await this.prisma.vendorInvitation.findFirst({
-      where: { procurementId: round.procurementId, vendorId: vendor.id, invitationStatus: 'ACCEPTED' },
+      where: {
+        procurementId: round.procurementId,
+        vendorId: vendor.id,
+        invitationStatus: 'ACCEPTED',
+      },
     });
-    if (!invitation) throw new BadRequestException('Not invited or invitation not accepted');
+    if (!invitation)
+      throw new BadRequestException('Not invited or invitation not accepted');
 
     const existingBid = await this.prisma.ebiddingResponse.findFirst({
       where: { ebiddingRoundId: roundId, vendorId: vendor.id },
@@ -125,9 +154,9 @@ export class EbiddingService {
     });
 
     if (!canSeeBids) {
-      return rounds.map(r => ({
+      return rounds.map((r) => ({
         ...r,
-        responses: r.responses.map(resp => ({
+        responses: r.responses.map((resp) => ({
           ...resp,
           bidAmount: undefined,
         })),
@@ -141,7 +170,9 @@ export class EbiddingService {
     const count = await this.prisma.vendorInvitation.count({
       where: { procurementId, invitationStatus: 'ACCEPTED' },
     });
-    console.log(`[E-Bidding] Vendor count check: procurement=${procurementId}, accepted=${count}, minimum=2, hasEnough=${count >= 2}`);
+    console.log(
+      `[E-Bidding] Vendor count check: procurement=${procurementId}, accepted=${count}, minimum=2, hasEnough=${count >= 2}`,
+    );
     return { count, minimum: 2, hasEnough: count >= 2 };
   }
 
@@ -154,7 +185,9 @@ export class EbiddingService {
   }
 
   async getMyBids(roundId: string, vendorUserId: string) {
-    const vendor = await this.prisma.vendor.findUnique({ where: { userId: vendorUserId } });
+    const vendor = await this.prisma.vendor.findUnique({
+      where: { userId: vendorUserId },
+    });
     if (!vendor) throw new NotFoundException('Vendor not found');
 
     return this.prisma.ebiddingResponse.findMany({
@@ -164,7 +197,9 @@ export class EbiddingService {
   }
 
   async getAllMyBids(vendorUserId: string) {
-    const vendor = await this.prisma.vendor.findUnique({ where: { userId: vendorUserId } });
+    const vendor = await this.prisma.vendor.findUnique({
+      where: { userId: vendorUserId },
+    });
     if (!vendor) throw new NotFoundException('Vendor not found');
 
     return this.prisma.ebiddingResponse.findMany({
@@ -176,7 +211,9 @@ export class EbiddingService {
             id: true,
             roundNo: true,
             status: true,
-            procurement: { select: { id: true, requestNo: true, title: true, status: true } },
+            procurement: {
+              select: { id: true, requestNo: true, title: true, status: true },
+            },
           },
         },
       },
@@ -184,15 +221,23 @@ export class EbiddingService {
   }
 
   async deleteBid(bidId: string, vendorUserId: string) {
-    const vendor = await this.prisma.vendor.findUnique({ where: { userId: vendorUserId } });
+    const vendor = await this.prisma.vendor.findUnique({
+      where: { userId: vendorUserId },
+    });
     if (!vendor) throw new NotFoundException('Vendor not found');
 
-    const bid = await this.prisma.ebiddingResponse.findUnique({ where: { id: bidId } });
+    const bid = await this.prisma.ebiddingResponse.findUnique({
+      where: { id: bidId },
+    });
     if (!bid) throw new NotFoundException('Bid not found');
-    if (bid.vendorId !== vendor.id) throw new BadRequestException('Not your bid');
+    if (bid.vendorId !== vendor.id)
+      throw new BadRequestException('Not your bid');
 
-    const round = await this.prisma.ebiddingRound.findUnique({ where: { id: bid.ebiddingRoundId } });
-    if (round?.status !== 'OPEN') throw new BadRequestException('Round is not open');
+    const round = await this.prisma.ebiddingRound.findUnique({
+      where: { id: bid.ebiddingRoundId },
+    });
+    if (round?.status !== 'OPEN')
+      throw new BadRequestException('Round is not open');
 
     return this.prisma.ebiddingResponse.delete({ where: { id: bidId } });
   }

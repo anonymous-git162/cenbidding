@@ -2,9 +2,22 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    console.error(`FATAL: Required environment variable ${name} is not set.`);
+    process.exit(1);
+  }
+  return value;
+}
+
 async function bootstrap() {
+  requireEnv('JWT_SECRET');
+  requireEnv('REFRESH_TOKEN_SECRET');
+
   const app = await NestFactory.create(AppModule);
 
   app.setGlobalPrefix('api');
@@ -12,10 +25,23 @@ async function bootstrap() {
   // Security headers
   app.use(helmet());
 
-  // CORS - allow all localhost and ngrok
+  // Cookie parser for httpOnly JWT cookies
+  app.use(cookieParser());
+
+  // CORS - allow configured frontend URL and localhost for development
+  const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:3000',
+    process.env.FRONTEND_URL,
+  ].filter(Boolean) as string[];
+
   app.enableCors({
-    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-      if (!origin || origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1') || origin.endsWith('.ngrok-free.app') || origin.endsWith('.ngrok-free.dev')) {
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
+      if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));

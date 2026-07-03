@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 import { EvaluationService } from './evaluation.service';
 import { PrismaService } from '../../database/prisma.service';
 import { mockPrisma, MockPrisma } from '../../../test/prisma-mock';
@@ -43,9 +43,17 @@ describe('EvaluationService', () => {
     it('should assign evaluators and update procurement status', async () => {
       prisma.evaluatorAssignment.deleteMany.mockResolvedValue({ count: 0 });
       prisma.evaluatorAssignment.create.mockResolvedValue(mockAssignment);
-      prisma.procurement.update.mockResolvedValue({ id: 'proc-1', status: 'EVALUATION', currentOwnerRole: 'EVALUATOR' });
+      prisma.procurement.update.mockResolvedValue({
+        id: 'proc-1',
+        status: 'EVALUATION',
+        currentOwnerRole: 'EVALUATOR',
+      });
 
-      const result = await service.assignEvaluators('proc-1', ['eval-1', 'eval-2'], 'eval-1');
+      const result = await service.assignEvaluators(
+        'proc-1',
+        ['eval-1', 'eval-2'],
+        'eval-1',
+      );
       expect(result).toHaveLength(2);
     });
   });
@@ -64,22 +72,39 @@ describe('EvaluationService', () => {
       prisma.evaluatorReview.findFirst.mockResolvedValue(null);
       prisma.evaluatorReview.create.mockResolvedValue(mockReview);
 
-      const result = await service.submitReview('eval-1', 'proc-1', 'vendor-1', 85, 'Good proposal');
+      const result = await service.submitReview(
+        'eval-1',
+        'proc-1',
+        'vendor-1',
+        85,
+        'Good proposal',
+      );
       expect(result.score).toBe(85);
     });
 
     it('should update existing review', async () => {
       prisma.evaluatorAssignment.findFirst.mockResolvedValue(mockAssignment);
       prisma.evaluatorReview.findFirst.mockResolvedValue(mockReview);
-      prisma.evaluatorReview.update.mockResolvedValue({ ...mockReview, score: 90 });
+      prisma.evaluatorReview.update.mockResolvedValue({
+        ...mockReview,
+        score: 90,
+      });
 
-      const result = await service.submitReview('eval-1', 'proc-1', 'vendor-1', 90, 'Updated');
+      const result = await service.submitReview(
+        'eval-1',
+        'proc-1',
+        'vendor-1',
+        90,
+        'Updated',
+      );
       expect(result.score).toBe(90);
     });
 
     it('should throw if evaluator not assigned', async () => {
       prisma.evaluatorAssignment.findFirst.mockResolvedValue(null);
-      await expect(service.submitReview('eval-1', 'proc-1', 'vendor-1', 85)).rejects.toThrow(BadRequestException);
+      await expect(
+        service.submitReview('eval-1', 'proc-1', 'vendor-1', 85),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -120,13 +145,20 @@ describe('EvaluationService', () => {
       prisma.evaluationConsolidation.upsert.mockResolvedValue({
         procurementId: 'proc-1',
         avgScore: 85,
-        voteSummary: { 'vendor-1': { avgScore: 85, voteCount: 1, variance: 0 } },
+        voteSummary: {
+          'vendor-1': { avgScore: 85, voteCount: 1, variance: 0 },
+        },
         recommendation: 'Proceed with vendor-1',
         leadCommentary: 'Strong proposal',
         leadEvaluatorId: 'eval-1',
       });
 
-      const result = await service.consolidate('proc-1', 'eval-1', 'Proceed with vendor-1', 'Strong proposal');
+      const result = await service.consolidate(
+        'proc-1',
+        'eval-1',
+        'Proceed with vendor-1',
+        'Strong proposal',
+      );
       expect(result.avgScore).toBe(85);
       expect(result.recommendation).toBe('Proceed with vendor-1');
     });

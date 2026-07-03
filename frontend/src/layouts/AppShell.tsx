@@ -5,6 +5,7 @@ import {
   ListItemText, Avatar, IconButton, Menu, MenuItem, Divider, useTheme, useMediaQuery, Badge, Chip, Tooltip,
 } from '@mui/material';
 import { Icon } from '../components/Icon';
+import CopilotChat from '../components/CopilotChat';
 import { useAuth } from '../contexts/AuthContext';
 import { useSocket } from '../hooks/useSocket';
 import api from '../services/api';
@@ -197,7 +198,7 @@ export default function AppShell() {
               </>
             )}
           </Menu>
-          <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+          <IconButton aria-label="Open user menu" onClick={(e) => setAnchorEl(e.currentTarget)}>
             <Badge color="error" variant="dot">
               <Icon name="Person" />
             </Badge>
@@ -224,7 +225,7 @@ export default function AppShell() {
           {drawer}
         </Drawer>
       ) : (
-        <Drawer variant="permanent" sx={{ '& .MuiDrawer-paper': { width: DRAWER_WIDTH, borderRight: '1px solid #e0e0e0' } }}>
+        <Drawer variant="permanent" sx={{ '& .MuiDrawer-paper': { width: DRAWER_WIDTH, borderRight: '1px solid', borderColor: 'divider' } }}>
           {drawer}
         </Drawer>
       )}
@@ -232,6 +233,7 @@ export default function AppShell() {
       <Box component="main" sx={{ flex: 1, ml: { md: `${DRAWER_WIDTH}px` }, mt: '64px', p: 3, bgcolor: 'background.default' }}>
         <Outlet />
       </Box>
+      <CopilotChat />
     </Box>
   );
 }

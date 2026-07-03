@@ -1,6 +1,12 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { initTestApp, closeTestApp, getHttpServer, getPrismaClient } from './test-app';
+import {
+  initTestApp,
+  closeTestApp,
+  getHttpServer,
+  getPrismaClient,
+} from './test-app';
+import { loginAs } from './test-helper';
 
 describe('Account Lockout (e2e)', () => {
   let app: INestApplication;
@@ -14,7 +20,11 @@ describe('Account Lockout (e2e)', () => {
 
     await request(getHttpServer())
       .post('/api/auth/register')
-      .send({ email: lockoutEmail, password: lockoutPassword, fullName: 'Lockout Test' })
+      .send({
+        email: lockoutEmail,
+        password: lockoutPassword,
+        fullName: 'Lockout Test',
+      })
       .expect(201);
   });
 
@@ -40,7 +50,9 @@ describe('Account Lockout (e2e)', () => {
 
   it('should allow login after admin unlocks the account', async () => {
     const prisma = getPrismaClient();
-    const user = await prisma.user.findUnique({ where: { email: lockoutEmail } });
+    const user = await prisma.user.findUnique({
+      where: { email: lockoutEmail },
+    });
     await prisma.user.update({
       where: { id: user!.id },
       data: { failedLoginAttempts: 0, lockedUntil: null },
@@ -51,7 +63,7 @@ describe('Account Lockout (e2e)', () => {
       .send({ email: lockoutEmail, password: lockoutPassword })
       .expect(201);
 
-    expect(res.body).toHaveProperty('accessToken');
+    expect(res.headers['set-cookie']).toBeDefined();
   });
 
   it('should not lock other users when one user is locked', async () => {
@@ -59,7 +71,11 @@ describe('Account Lockout (e2e)', () => {
 
     await request(getHttpServer())
       .post('/api/auth/register')
-      .send({ email: otherEmail, password: lockoutPassword, fullName: 'Other User' })
+      .send({
+        email: otherEmail,
+        password: lockoutPassword,
+        fullName: 'Other User',
+      })
       .expect(201);
 
     await request(getHttpServer())

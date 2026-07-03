@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { Box, CircularProgress, Typography, Alert, Button } from '@mui/material';
 import AppShell from '../layouts/AppShell';
 import LoginPage from '../pages/LoginPage';
+import RegisterPage from '../pages/RegisterPage';
 import DashboardPage from '../pages/DashboardPage';
 import ProcurementListPage from '../pages/ProcurementListPage';
 import ProcurementCreatePage from '../pages/ProcurementCreatePage';
@@ -94,6 +95,7 @@ export default function AppRoutes() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
           <Route path="/" element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<DashboardPage />} />

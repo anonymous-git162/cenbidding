@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
@@ -40,14 +44,20 @@ export class AuthService {
         updateData.lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
       }
 
-      await this.prisma.user.update({ where: { id: user.id }, data: updateData });
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: updateData,
+      });
 
       throw new UnauthorizedException('Invalid email or password');
     }
 
     // Reset failed attempts on successful login
     if (user.failedLoginAttempts > 0) {
-      await this.prisma.user.update({ where: { id: user.id }, data: { failedLoginAttempts: 0, lockedUntil: null } });
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { failedLoginAttempts: 0, lockedUntil: null },
+      });
     }
 
     const tokens = await this.generateTokens(user.id, user.email, user.role);
@@ -111,7 +121,11 @@ export class AuthService {
         where: { tokenHash },
       });
 
-      if (!storedToken || storedToken.revokedAt !== null || storedToken.expiresAt <= new Date()) {
+      if (
+        !storedToken ||
+        storedToken.revokedAt !== null ||
+        storedToken.expiresAt <= new Date()
+      ) {
         throw new UnauthorizedException('Invalid refresh token');
       }
 
@@ -149,20 +163,38 @@ export class AuthService {
   async getMe(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, email: true, fullName: true, role: true, isActive: true, createdAt: true },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+      },
     });
     return user;
   }
 
-  async changePassword(userId: string, currentPassword: string, newPassword: string) {
-    if (!newPassword || newPassword.length < 8 || !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(newPassword)) {
-      throw new BadRequestException('Password must be at least 8 characters with uppercase, lowercase, and a number');
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ) {
+    if (
+      !newPassword ||
+      newPassword.length < 8 ||
+      !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(newPassword)
+    ) {
+      throw new BadRequestException(
+        'Password must be at least 8 characters with uppercase, lowercase, and a number',
+      );
     }
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new UnauthorizedException('User not found');
 
     const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
-    if (!isValid) throw new UnauthorizedException('Current password is incorrect');
+    if (!isValid)
+      throw new UnauthorizedException('Current password is incorrect');
 
     const passwordHash = await bcrypt.hash(newPassword, 10);
     await this.prisma.user.update({
@@ -206,11 +238,16 @@ export class AuthService {
     const value = parseInt(match[1]);
     const unit = match[2];
     switch (unit) {
-      case 's': return value / 86400;
-      case 'm': return value / 1440;
-      case 'h': return value / 24;
-      case 'd': return value;
-      default: return 7;
+      case 's':
+        return value / 86400;
+      case 'm':
+        return value / 1440;
+      case 'h':
+        return value / 24;
+      case 'd':
+        return value;
+      default:
+        return 7;
     }
   }
 

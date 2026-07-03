@@ -232,4 +232,56 @@ describe('BiddingRoomPage', () => {
       expect(screen.getByText('Lowest')).toBeInTheDocument();
     });
   });
+
+  it('shows error message when rounds API fails', async () => {
+    (useAuth as any).mockReturnValue({
+      user: { id: '1', role: 'PROCUREMENT' },
+    });
+
+    mockGet.mockImplementation((url: string) => {
+      if (url.startsWith('/procurements')) return Promise.resolve({ data: { data: mockProcurements, total: 2 } });
+      if (url.includes('/rounds/procurement')) return Promise.reject({ response: { data: { message: 'Access denied' } } });
+      return Promise.resolve({ data: [] });
+    });
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText('RFP-001 - Office Supplies')).toBeInTheDocument());
+
+    const select = screen.getByLabelText('Select Procurement');
+    await userEvent.selectOptions(select, 'proc-1');
+
+    await waitFor(() => {
+      expect(screen.getByText('Access denied')).toBeInTheDocument();
+    });
+  });
+
+  it('shows error message when open round API fails', async () => {
+    (useAuth as any).mockReturnValue({
+      user: { id: '1', role: 'PROCUREMENT' },
+    });
+
+    const pendingRound = { ...mockRounds[0], status: 'PENDING' };
+    mockGet.mockImplementation((url: string) => {
+      if (url.startsWith('/procurements')) return Promise.resolve({ data: { data: mockProcurements, total: 2 } });
+      if (url.includes('/rounds/procurement')) return Promise.resolve({ data: [pendingRound] });
+      return Promise.resolve({ data: [] });
+    });
+
+    mockPost.mockRejectedValue({ response: { data: { message: 'Failed to open round' } } });
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText('RFP-001 - Office Supplies')).toBeInTheDocument());
+
+    const select = screen.getByLabelText('Select Procurement');
+    await userEvent.selectOptions(select, 'proc-1');
+
+    await waitFor(() => expect(screen.getByText('Round 1')).toBeInTheDocument());
+
+    const openButton = screen.getByText('Open');
+    await userEvent.click(openButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('Failed to open round')).toBeInTheDocument();
+    });
+  });
 });

@@ -3,6 +3,8 @@ import { PrismaService } from '../../database/prisma.service';
 
 @Injectable()
 export class HealthService {
+  private startTime = Date.now();
+
   constructor(private prisma: PrismaService) {}
 
   async check() {
@@ -15,10 +17,17 @@ export class HealthService {
 
     return {
       status: dbStatus === 'healthy' ? 'ok' : 'error',
+      uptime: Math.floor((Date.now() - this.startTime) / 1000),
       timestamp: new Date().toISOString(),
-      services: {
-        database: dbStatus,
-      },
+      services: { database: dbStatus },
+    };
+  }
+
+  live() {
+    return {
+      status: 'ok',
+      uptime: Math.floor((Date.now() - this.startTime) / 1000),
+      timestamp: new Date().toISOString(),
     };
   }
 }

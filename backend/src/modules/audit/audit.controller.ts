@@ -15,7 +15,10 @@ export class AuditController {
   @Get(':procurementId')
   @Roles(UserRole.ADMIN, UserRole.PROCUREMENT, UserRole.APPROVER)
   @ApiOperation({ summary: 'Get audit logs for procurement' })
-  findByProcurement(@Param('procurementId') procurementId: string, @Query('page') page?: number) {
+  findByProcurement(
+    @Param('procurementId') procurementId: string,
+    @Query('page') page?: number,
+  ) {
     return this.auditService.findByProcurement(procurementId, page || 1);
   }
 }

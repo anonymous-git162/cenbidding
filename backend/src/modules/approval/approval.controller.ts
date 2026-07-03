@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ApprovalService } from './approval.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -29,21 +37,37 @@ export class ApprovalController {
   @Post(':procurementId/approve')
   @Roles(UserRole.APPROVER, UserRole.ADMIN)
   @ApiOperation({ summary: 'Approve procurement' })
-  approve(@Param('procurementId') procurementId: string, @Body() body: { comment?: string }, @Request() req: any) {
-    return this.approvalService.approve(procurementId, req.user.id, body.comment);
+  approve(
+    @Param('procurementId') procurementId: string,
+    @Body() body: { comment?: string },
+    @Request() req: any,
+  ) {
+    return this.approvalService.approve(
+      procurementId,
+      req.user.id,
+      body.comment,
+    );
   }
 
   @Post(':procurementId/return')
   @Roles(UserRole.APPROVER, UserRole.ADMIN)
   @ApiOperation({ summary: 'Return procurement' })
-  returnProc(@Param('procurementId') procurementId: string, @Body() body: { reason?: string }, @Request() req: any) {
+  returnProc(
+    @Param('procurementId') procurementId: string,
+    @Body() body: { reason?: string },
+    @Request() req: any,
+  ) {
     return this.approvalService.return(procurementId, req.user.id, body.reason);
   }
 
   @Post(':procurementId/reject')
   @Roles(UserRole.APPROVER, UserRole.ADMIN)
   @ApiOperation({ summary: 'Reject procurement' })
-  reject(@Param('procurementId') procurementId: string, @Body() body: { reason?: string }, @Request() req: any) {
+  reject(
+    @Param('procurementId') procurementId: string,
+    @Body() body: { reason?: string },
+    @Request() req: any,
+  ) {
     return this.approvalService.reject(procurementId, req.user.id, body.reason);
   }
 

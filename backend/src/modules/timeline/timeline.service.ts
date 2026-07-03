@@ -5,7 +5,13 @@ import { PrismaService } from '../../database/prisma.service';
 export class TimelineService {
   constructor(private prisma: PrismaService) {}
 
-  async append(data: { procurementId: string; eventType: string; actorRole: string; actorId?: string; metadata?: any }) {
+  async append(data: {
+    procurementId: string;
+    eventType: string;
+    actorRole: string;
+    actorId?: string;
+    metadata?: any;
+  }) {
     return this.prisma.procurementTimeline.create({ data });
   }
 

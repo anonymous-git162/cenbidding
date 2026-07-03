@@ -1,9 +1,19 @@
-import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { EbiddingService } from './ebidding.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
+import { CreateRoundDto, PlaceBidDto } from './dto/ebidding.dto';
 
 @ApiTags('E-Bidding')
 @ApiBearerAuth()
@@ -15,8 +25,8 @@ export class EbiddingController {
   @Post('rounds')
   @Roles(UserRole.PROCUREMENT)
   @ApiOperation({ summary: 'Create a new bidding round' })
-  createRound(@Body() body: { procurementId: string }, @Request() req: any) {
-    return this.ebiddingService.createRound(body.procurementId, req.user.id);
+  createRound(@Body() dto: CreateRoundDto, @Request() req: any) {
+    return this.ebiddingService.createRound(dto.procurementId, req.user.id);
   }
 
   @Post('rounds/:id/open')
@@ -36,13 +46,20 @@ export class EbiddingController {
   @Post('bid')
   @Roles(UserRole.VENDOR)
   @ApiOperation({ summary: 'Place or update a bid' })
-  placeBid(@Body() body: { roundId: string; bidAmount: number; fileIds?: string[] }, @Request() req: any) {
-    return this.ebiddingService.placeBid(body.roundId, req.user.id, body.bidAmount);
+  placeBid(@Body() dto: PlaceBidDto, @Request() req: any) {
+    return this.ebiddingService.placeBid(
+      dto.roundId,
+      req.user.id,
+      dto.bidAmount,
+    );
   }
 
   @Get('rounds/procurement/:procurementId')
   @ApiOperation({ summary: 'Get all rounds for a procurement' })
-  getRounds(@Param('procurementId') procurementId: string, @Request() req: any) {
+  getRounds(
+    @Param('procurementId') procurementId: string,
+    @Request() req: any,
+  ) {
     return this.ebiddingService.getRounds(procurementId, req.user);
   }
 

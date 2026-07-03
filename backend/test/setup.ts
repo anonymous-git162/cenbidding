@@ -9,7 +9,10 @@ let prisma: PrismaService;
 let moduleFixture: TestingModule;
 
 beforeAll(async () => {
-  process.env.DATABASE_URL = process.env.TEST_DATABASE_URL || process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/ebidding_test';
+  process.env.DATABASE_URL =
+    process.env.TEST_DATABASE_URL ||
+    process.env.DATABASE_URL ||
+    'postgresql://postgres:postgres@localhost:5432/ebidding_test';
   process.env.JWT_SECRET = 'test-jwt-secret-for-testing';
   process.env.REFRESH_TOKEN_SECRET = 'test-refresh-secret-for-testing';
 
@@ -24,7 +27,13 @@ beforeAll(async () => {
 
   app = moduleFixture.createNestApplication();
   app.setGlobalPrefix('api');
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
   await app.init();
 
   prisma = app.get(PrismaService);
@@ -37,7 +46,9 @@ afterAll(async () => {
     `;
     for (const { tablename } of tablenames) {
       if (tablename !== '_prisma_migrations') {
-        await prisma.$executeRawUnsafe(`TRUNCATE TABLE "${tablename}" CASCADE;`);
+        await prisma.$executeRawUnsafe(
+          `TRUNCATE TABLE "${tablename}" CASCADE;`,
+        );
       }
     }
   }

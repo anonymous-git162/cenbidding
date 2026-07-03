@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { PrismaService } from '../../database/prisma.service';
 import { mockPrisma, MockPrisma } from '../../../test/prisma-mock';
@@ -23,22 +27,13 @@ describe('UsersService', () => {
     vendor: null,
   };
 
-  const mockVendorUser = {
-    ...mockUser,
-    id: 'vendor-user-1',
-    email: 'vendor@test.com',
-    role: 'VENDOR',
-    vendor: { companyName: 'Test Corp' },
-  };
+
 
   beforeEach(async () => {
     prisma = mockPrisma();
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        UsersService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [UsersService, { provide: PrismaService, useValue: prisma }],
     }).compile();
 
     service = module.get<UsersService>(UsersService);
@@ -63,7 +58,9 @@ describe('UsersService', () => {
         expect.objectContaining({
           where: expect.objectContaining({
             OR: expect.arrayContaining([
-              expect.objectContaining({ fullName: expect.objectContaining({ contains: 'test' }) }),
+              expect.objectContaining({
+                fullName: expect.objectContaining({ contains: 'test' }),
+              }),
             ]),
           }),
         }),
@@ -90,7 +87,10 @@ describe('UsersService', () => {
     });
 
     it('should block non-admin from seeing admin role filter', async () => {
-      const result = await service.findAll({ role: 'ADMIN', page: 1, limit: 20 }, 'REQUESTER');
+      const result = await service.findAll(
+        { role: 'ADMIN', page: 1, limit: 20 },
+        'REQUESTER',
+      );
       expect(result.data).toHaveLength(0);
       expect(result.meta.total).toBe(0);
     });
@@ -98,7 +98,9 @@ describe('UsersService', () => {
 
   describe('getProperties', () => {
     it('should return properties with departments', async () => {
-      prisma.property.findMany.mockResolvedValue([{ id: 'prop-1', code: 'BKK', name: 'Bangkok', departments: [] }]);
+      prisma.property.findMany.mockResolvedValue([
+        { id: 'prop-1', code: 'BKK', name: 'Bangkok', departments: [] },
+      ]);
       const result = await service.getProperties();
       expect(result).toHaveLength(1);
     });
@@ -106,7 +108,9 @@ describe('UsersService', () => {
 
   describe('getDepartments', () => {
     it('should return departments for property', async () => {
-      prisma.department.findMany.mockResolvedValue([{ id: 'dept-1', code: 'IT', name: 'IT', propertyId: 'prop-1' }]);
+      prisma.department.findMany.mockResolvedValue([
+        { id: 'dept-1', code: 'IT', name: 'IT', propertyId: 'prop-1' },
+      ]);
       const result = await service.getDepartments('prop-1');
       expect(result).toHaveLength(1);
     });
@@ -121,7 +125,9 @@ describe('UsersService', () => {
 
     it('should throw NotFoundException', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
-      await expect(service.findById('invalid')).rejects.toThrow(NotFoundException);
+      await expect(service.findById('invalid')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -156,31 +162,37 @@ describe('UsersService', () => {
     });
 
     it('should throw on invalid email', async () => {
-      await expect(service.create({
-        email: 'invalid',
-        password: 'password123',
-        fullName: 'Test',
-        role: 'REQUESTER',
-      })).rejects.toThrow(BadRequestException);
+      await expect(
+        service.create({
+          email: 'invalid',
+          password: 'password123',
+          fullName: 'Test',
+          role: 'REQUESTER',
+        }),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw on short password', async () => {
-      await expect(service.create({
-        email: 'test@test.com',
-        password: '12345',
-        fullName: 'Test',
-        role: 'REQUESTER',
-      })).rejects.toThrow(BadRequestException);
+      await expect(
+        service.create({
+          email: 'test@test.com',
+          password: '12345',
+          fullName: 'Test',
+          role: 'REQUESTER',
+        }),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw on duplicate email', async () => {
       prisma.user.findUnique.mockResolvedValue(mockUser);
-      await expect(service.create({
-        email: 'user@test.com',
-        password: 'password123',
-        fullName: 'Test',
-        role: 'REQUESTER',
-      })).rejects.toThrow(ConflictException);
+      await expect(
+        service.create({
+          email: 'user@test.com',
+          password: 'password123',
+          fullName: 'Test',
+          role: 'REQUESTER',
+        }),
+      ).rejects.toThrow(ConflictException);
     });
 
     it('should create vendor record for VENDOR role', async () => {
@@ -202,21 +214,34 @@ describe('UsersService', () => {
   describe('update', () => {
     it('should update user fields', async () => {
       prisma.user.findUnique.mockResolvedValue(mockUser);
-      prisma.user.update.mockResolvedValue({ ...mockUser, fullName: 'Updated Name' });
+      prisma.user.update.mockResolvedValue({
+        ...mockUser,
+        fullName: 'Updated Name',
+      });
 
-      const result = await service.update('user-1', { fullName: 'Updated Name' });
+      const result = await service.update('user-1', {
+        fullName: 'Updated Name',
+      });
       expect(result.fullName).toBe('Updated Name');
     });
 
     it('should throw on invalid email in update', async () => {
       prisma.user.findUnique.mockResolvedValue(mockUser);
-      await expect(service.update('user-1', { email: 'invalid' })).rejects.toThrow(BadRequestException);
+      await expect(
+        service.update('user-1', { email: 'invalid' }),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw on duplicate email in update', async () => {
       prisma.user.findUnique.mockResolvedValueOnce(mockUser);
-      prisma.user.findUnique.mockResolvedValueOnce({ ...mockUser, id: 'other', email: 'other@test.com' });
-      await expect(service.update('user-1', { email: 'other@test.com' })).rejects.toThrow(ConflictException);
+      prisma.user.findUnique.mockResolvedValueOnce({
+        ...mockUser,
+        id: 'other',
+        email: 'other@test.com',
+      });
+      await expect(
+        service.update('user-1', { email: 'other@test.com' }),
+      ).rejects.toThrow(ConflictException);
     });
 
     it('should create vendor record when role changes to VENDOR', async () => {
@@ -225,7 +250,10 @@ describe('UsersService', () => {
       prisma.vendor.findUnique.mockResolvedValue(null);
       prisma.vendor.create.mockResolvedValue({});
 
-      const result = await service.update('user-1', { role: 'VENDOR', companyName: 'New Corp' });
+      const result = await service.update('user-1', {
+        role: 'VENDOR',
+        companyName: 'New Corp',
+      });
       expect(result).toHaveProperty('role', 'VENDOR');
     });
 
@@ -235,7 +263,10 @@ describe('UsersService', () => {
       prisma.vendor.findUnique.mockResolvedValue({ id: 'vendor-1' });
       prisma.vendor.update.mockResolvedValue({});
 
-      const result = await service.update('user-1', { role: 'VENDOR', companyName: 'Updated Corp' });
+      const result = await service.update('user-1', {
+        role: 'VENDOR',
+        companyName: 'Updated Corp',
+      });
       expect(result).toBeDefined();
     });
   });
@@ -251,14 +282,20 @@ describe('UsersService', () => {
 
     it('should throw on admin deletion', async () => {
       prisma.user.findUnique.mockResolvedValue({ ...mockUser, role: 'ADMIN' });
-      await expect(service.remove('admin-1')).rejects.toThrow(BadRequestException);
+      await expect(service.remove('admin-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
   describe('unlock', () => {
     it('should unlock a user', async () => {
       prisma.user.findUnique.mockResolvedValue(mockUser);
-      prisma.user.update.mockResolvedValue({ ...mockUser, failedLoginAttempts: 0, lockedUntil: null });
+      prisma.user.update.mockResolvedValue({
+        ...mockUser,
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+      });
 
       const result = await service.unlock('user-1');
       expect(result.failedLoginAttempts).toBe(0);

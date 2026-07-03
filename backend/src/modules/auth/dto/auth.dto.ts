@@ -1,4 +1,11 @@
-import { IsEmail, IsString, MinLength, IsEnum, IsOptional, Matches } from 'class-validator';
+import {
+  IsEmail,
+  IsString,
+  MinLength,
+  IsEnum,
+  IsOptional,
+  Matches,
+} from 'class-validator';
 import { UserRole } from '@prisma/client';
 
 export class LoginDto {
@@ -8,7 +15,8 @@ export class LoginDto {
   @IsString()
   @MinLength(8)
   @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
-    message: 'Password must contain at least one uppercase letter, one lowercase letter, and one number',
+    message:
+      'Password must contain at least one uppercase letter, one lowercase letter, and one number',
   })
   password: string;
 }
@@ -20,7 +28,8 @@ export class RegisterDto {
   @IsString()
   @MinLength(8)
   @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
-    message: 'Password must contain at least one uppercase letter, one lowercase letter, and one number',
+    message:
+      'Password must contain at least one uppercase letter, one lowercase letter, and one number',
   })
   password: string;
 

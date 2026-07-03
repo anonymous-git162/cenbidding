@@ -1,6 +1,12 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { initTestApp, closeTestApp, getHttpServer, getPrismaClient } from './test-app';
+import {
+  initTestApp,
+  closeTestApp,
+  getHttpServer,
+  getPrismaClient,
+} from './test-app';
+import { loginAs, getCookies } from './test-helper';
 
 describe('Auth (e2e)', () => {
   let app: INestApplication;
@@ -21,11 +27,14 @@ describe('Auth (e2e)', () => {
     it('should register a new user with REQUESTER role', async () => {
       const res = await request(getHttpServer())
         .post('/api/auth/register')
-        .send({ email: testEmail, password: testPassword, fullName: 'E2E Auth User' })
+        .send({
+          email: testEmail,
+          password: testPassword,
+          fullName: 'E2E Auth User',
+        })
         .expect(201);
 
-      expect(res.body).toHaveProperty('accessToken');
-      expect(res.body).toHaveProperty('refreshToken');
+      expect(res.headers['set-cookie']).toBeDefined();
       expect(res.body.user.email).toBe(testEmail);
       expect(res.body.user.role).toBe('REQUESTER');
     });
@@ -33,7 +42,11 @@ describe('Auth (e2e)', () => {
     it('should reject duplicate email', async () => {
       const res = await request(getHttpServer())
         .post('/api/auth/register')
-        .send({ email: testEmail, password: testPassword, fullName: 'Duplicate' })
+        .send({
+          email: testEmail,
+          password: testPassword,
+          fullName: 'Duplicate',
+        })
         .expect(401);
 
       expect(res.body.message).toBe('Email already registered');
@@ -42,7 +55,11 @@ describe('Auth (e2e)', () => {
     it('should reject weak password', async () => {
       await request(getHttpServer())
         .post('/api/auth/register')
-        .send({ email: `weak-${Date.now()}@test.com`, password: 'short', fullName: 'Weak' })
+        .send({
+          email: `weak-${Date.now()}@test.com`,
+          password: 'short',
+          fullName: 'Weak',
+        })
         .expect(400);
     });
   });
@@ -54,8 +71,7 @@ describe('Auth (e2e)', () => {
         .send({ email: 'requester@ebidding.com', password: 'Password123' })
         .expect(201);
 
-      expect(res.body).toHaveProperty('accessToken');
-      expect(res.body).toHaveProperty('refreshToken');
+      expect(res.headers['set-cookie']).toBeDefined();
       expect(res.body.user.email).toBe('requester@ebidding.com');
     });
 
@@ -79,19 +95,20 @@ describe('Auth (e2e)', () => {
   });
 
   describe('GET /api/auth/me', () => {
-    let token: string;
+    let cookies: string;
 
     beforeAll(async () => {
-      const res = await request(getHttpServer())
-        .post('/api/auth/login')
-        .send({ email: 'requester@ebidding.com', password: 'Password123' });
-      token = res.body.accessToken;
+      cookies = await loginAs(
+        getHttpServer(),
+        'requester@ebidding.com',
+        'Password123',
+      );
     });
 
     it('should return user profile with valid token', async () => {
       const res = await request(getHttpServer())
         .get('/api/auth/me')
-        .set('Authorization', `Bearer ${token}`)
+        .set('Cookie', cookies)
         .expect(200);
 
       expect(res.body.email).toBe('requester@ebidding.com');
@@ -110,24 +127,32 @@ describe('Auth (e2e)', () => {
   });
 
   describe('POST /api/auth/refresh', () => {
-    let refreshToken: string;
+    let refreshTokenFromBody: string;
 
     beforeAll(async () => {
-      const res = await request(getHttpServer())
-        .post('/api/auth/login')
-        .send({ email: 'requester@ebidding.com', password: 'Password123' });
-      refreshToken = res.body.refreshToken;
+      const cookies = await loginAs(
+        getHttpServer(),
+        'requester@ebidding.com',
+        'Password123',
+      );
+      const cookieParts = cookies
+        .split('; ')
+        .reduce<Record<string, string>>((acc, c) => {
+          const [k, v] = c.split('=');
+          if (k) acc[k.trim()] = v;
+          return acc;
+        }, {});
+      refreshTokenFromBody = cookieParts['refreshToken'] || '';
     });
 
     it('should rotate tokens with valid refresh token', async () => {
       const res = await request(getHttpServer())
         .post('/api/auth/refresh')
-        .send({ refreshToken })
+        .send({ refreshToken: refreshTokenFromBody })
         .expect(201);
 
-      expect(res.body).toHaveProperty('accessToken');
-      expect(res.body).toHaveProperty('refreshToken');
-      expect(res.body.accessToken).not.toBe(refreshToken);
+      expect(res.body.message).toBe('Tokens refreshed');
+      expect(res.headers['set-cookie']).toBeDefined();
     });
 
     it('should reject invalid refresh token', async () => {
@@ -139,20 +164,17 @@ describe('Auth (e2e)', () => {
   });
 
   describe('POST /api/auth/change-password', () => {
-    let token: string;
+    let cookies: string;
     const newPassword = 'NewPass456';
 
     beforeAll(async () => {
-      const res = await request(getHttpServer())
-        .post('/api/auth/login')
-        .send({ email: testEmail, password: testPassword });
-      token = res.body.accessToken;
+      cookies = await loginAs(getHttpServer(), testEmail, testPassword);
     });
 
     it('should change password with valid request', async () => {
       await request(getHttpServer())
         .post('/api/auth/change-password')
-        .set('Authorization', `Bearer ${token}`)
+        .set('Cookie', cookies)
         .send({ currentPassword: testPassword, newPassword })
         .expect(201);
     });
@@ -163,39 +185,38 @@ describe('Auth (e2e)', () => {
         .send({ email: testEmail, password: newPassword })
         .expect(201);
 
-      expect(res.body).toHaveProperty('accessToken');
+      expect(res.headers['set-cookie']).toBeDefined();
     });
 
     it('should reject wrong current password', async () => {
       await request(getHttpServer())
         .post('/api/auth/change-password')
-        .set('Authorization', `Bearer ${token}`)
+        .set('Cookie', cookies)
         .send({ currentPassword: 'WrongPass1', newPassword: 'Another1' })
         .expect(401);
     });
   });
 
   describe('POST /api/auth/logout', () => {
-    let token: string;
+    let cookies: string;
 
     beforeAll(async () => {
-      const res = await request(getHttpServer())
-        .post('/api/auth/login')
-        .send({ email: 'requester@ebidding.com', password: 'Password123' });
-      token = res.body.accessToken;
+      cookies = await loginAs(
+        getHttpServer(),
+        'requester@ebidding.com',
+        'Password123',
+      );
     });
 
     it('should logout successfully', async () => {
       await request(getHttpServer())
         .post('/api/auth/logout')
-        .set('Authorization', `Bearer ${token}`)
+        .set('Cookie', cookies)
         .expect(201);
     });
 
     it('should require auth for logout', async () => {
-      await request(getHttpServer())
-        .post('/api/auth/logout')
-        .expect(401);
+      await request(getHttpServer()).post('/api/auth/logout').expect(401);
     });
   });
 });

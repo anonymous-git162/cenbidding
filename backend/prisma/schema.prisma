@@ -60,6 +60,7 @@ enum RequestType {
 }
 
 enum VendorStatus {
+  PENDING_APPROVAL
   ACTIVE
   INACTIVE
   SUSPENDED
@@ -212,6 +213,7 @@ model Procurement {
   approvals             Approval[]
   result                ProcurementResult?
   files                 File[]
+  evaluationCriteria    Json?                 @map("evaluation_criteria")
 
   @@index([status])
   @@index([requesterId])
@@ -331,6 +333,7 @@ model EvaluatorReview {
   evaluator   User        @relation(fields: [evaluatorId], references: [id])
   procurement Procurement @relation(fields: [procurementId], references: [id])
   vendor      Vendor      @relation(fields: [vendorId], references: [id])
+  criterionScores Json?   @map("criterion_scores")
 
   @@unique([evaluatorId, procurementId, vendorId])
   @@index([procurementId])
@@ -375,6 +378,8 @@ model ProcurementResult {
   winningVendorId  String?   @map("winning_vendor_id") @db.Uuid
   announcementText String?   @map("announcement_text")
   announcedAt      DateTime? @map("announced_at")
+  contractSentAt   DateTime? @map("contract_sent_at")
+  contractSignedAt DateTime? @map("contract_signed_at")
   closedAt         DateTime? @map("closed_at")
 
   procurement   Procurement @relation(fields: [procurementId], references: [id])

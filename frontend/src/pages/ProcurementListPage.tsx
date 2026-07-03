@@ -6,6 +6,7 @@ import {
   TableHead, TableRow, TextField, MenuItem, Select, FormControl, InputLabel, TablePagination,
   InputAdornment, Chip, IconButton, Tooltip, LinearProgress, Collapse, TableSortLabel,
 } from '@mui/material';
+import { sanitizeCSVCell, downloadCSV } from '../utils/csv';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import StatusBadge from '../components/StatusBadge';
@@ -195,14 +196,9 @@ export default function ProcurementListPage() {
         new Date(p.createdAt).toLocaleDateString(),
       ]);
 
-      const csv = [headers.join(','), ...rows.map((r: any[]) => r.join(','))].join('\n');
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `procurements-${new Date().toISOString().slice(0, 10)}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const safeRows = rows.map((r: any[]) => r.map(c => sanitizeCSVCell(String(c))));
+      const csv = [headers.join(','), ...safeRows.map((r: string[]) => r.join(','))].join('\n');
+      downloadCSV(csv, `procurements-${new Date().toISOString().slice(0, 10)}.csv`);
     } catch {
     }
   };
@@ -327,7 +323,7 @@ export default function ProcurementListPage() {
           </Box>
 
           <Collapse in={advancedOpen}>
-            <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #F3F4F6', display: 'flex', gap: 1.5, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+            <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider', display: 'flex', gap: 1.5, alignItems: 'flex-end', flexWrap: 'wrap' }}>
               <TextField
                 size="small" label="Date From" type="date"
                 value={filters.dateFrom} onChange={(e) => updateFilter({ dateFrom: e.target.value })}
@@ -458,7 +454,7 @@ export default function ProcurementListPage() {
           onPageChange={(_, p) => updateFilter({ page: p })}
           onRowsPerPageChange={(e) => updateFilter({ rowsPerPage: parseInt(e.target.value), page: 0 })}
           rowsPerPageOptions={[5, 10, 25, 50]}
-          sx={{ borderTop: '1px solid #E5E7EB' }}
+          sx={{ borderTop: '1px solid', borderColor: 'divider' }}
         />
       </Card>
     </Box>

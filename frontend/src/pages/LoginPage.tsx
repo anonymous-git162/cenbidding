@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Box, Card, CardContent, TextField, Button, Typography, Alert, useTheme } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -63,7 +63,7 @@ export default function LoginPage() {
           </form>
 
           <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mt: 3 }}>
-            Contact your administrator for account access
+            Don't have an account? <Link to="/register" style={{ color: theme.palette.primary.main }}>Register as vendor</Link>
           </Typography>
         </CardContent>
       </Card>

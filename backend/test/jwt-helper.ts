@@ -19,13 +19,19 @@ export function createJwtHelper() {
     generateAccessToken(user: { id: string; email: string; role: string }) {
       return jwtService.sign(
         { sub: user.id, email: user.email, role: user.role, jti: 'test-jti' },
-        { secret: configService.get('jwt.secret'), expiresIn: configService.get('jwt.expiresIn') },
+        {
+          secret: configService.get('jwt.secret'),
+          expiresIn: configService.get('jwt.expiresIn'),
+        },
       );
     },
     generateRefreshToken(user: { id: string; email: string; role: string }) {
       return jwtService.sign(
         { sub: user.id, email: user.email, role: user.role, jti: 'test-jti' },
-        { secret: configService.get('refreshToken.secret'), expiresIn: configService.get('refreshToken.expiresIn') },
+        {
+          secret: configService.get('refreshToken.secret'),
+          expiresIn: configService.get('refreshToken.expiresIn'),
+        },
       );
     },
   };

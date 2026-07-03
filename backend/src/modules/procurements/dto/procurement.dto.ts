@@ -1,22 +1,45 @@
-import { IsString, IsOptional, IsEnum, IsNumber, IsDateString, MinLength, IsArray, Min } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsNumber,
+  IsDateString,
+  MinLength,
+  IsArray,
+  Min,
+} from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 import { RequestType } from '@prisma/client';
+import { stripHtml } from '../../../common/helpers/sanitize';
+
+const Sanitize = () =>
+  Transform(({ value }) =>
+    typeof value === 'string' ? stripHtml(value) : value,
+  );
 
 export class CreateProcurementDto {
   @IsEnum(RequestType)
   requestType: RequestType;
 
+  @Sanitize()
   @IsString()
   @MinLength(3)
   title: string;
 
+  @Sanitize()
   @IsString()
   @IsOptional()
   description?: string;
 
+  @Sanitize()
   @IsString()
   @IsOptional()
   businessNeed?: string;
+
+  @Sanitize()
+  @IsString()
+  @IsOptional()
+  justification?: string;
 
   @IsString()
   @IsOptional()
@@ -40,27 +63,32 @@ export class CreateProcurementDto {
   @Type(() => Number)
   budgetEstimate?: number;
 
-  @IsString()
-  @IsOptional()
-  justification?: string;
-
   @IsArray()
   @IsOptional()
+  @IsString({ each: true })
   fileIds?: string[];
 }
 
 export class UpdateProcurementDto {
+  @Sanitize()
   @IsString()
   @IsOptional()
   title?: string;
 
+  @Sanitize()
   @IsString()
   @IsOptional()
   description?: string;
 
+  @Sanitize()
   @IsString()
   @IsOptional()
   businessNeed?: string;
+
+  @Sanitize()
+  @IsString()
+  @IsOptional()
+  justification?: string;
 
   @IsString()
   @IsOptional()
@@ -83,10 +111,6 @@ export class UpdateProcurementDto {
   @IsOptional()
   @Type(() => Number)
   budgetEstimate?: number;
-
-  @IsString()
-  @IsOptional()
-  justification?: string;
 }
 
 export class QueryProcurementDto {
@@ -152,10 +176,12 @@ export class QueryProcurementDto {
 }
 
 export class ReviewDto {
+  @Sanitize()
   @IsString()
   @IsOptional()
   comment?: string;
 
+  @Sanitize()
   @IsString()
   @IsOptional()
   reason?: string;
@@ -168,6 +194,7 @@ export class PublishDto {
 }
 
 export class FinalDecisionDto {
+  @Sanitize()
   @IsString()
   @IsOptional()
   finalDecisionReason?: string;

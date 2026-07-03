@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ebidding_test
+
 jobs:
   backend:
     runs-on: ubuntu-latest
@@ -23,7 +26,6 @@ jobs:
 
       - run: npm ci
       - run: npx prisma generate
-      - run: npm run lint
       - run: npx tsc --noEmit
       - run: npm test
 
@@ -44,3 +46,167 @@ jobs:
       - run: npm ci
       - run: npx tsc --noEmit
       - run: npm test
+
+  e2e:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ebidding_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+      - run: npx ts-node prisma/seed.ts
+        env:
+          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+      - run: npm run test:e2e
+        env:
+          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+          JWT_SECRET: test-jwt-secret-for-testing
+          REFRESH_TOKEN_SECRET: test-refresh-secret-for-testing
+
+  frontend-e2e:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ebidding_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ebidding_test
+      JWT_SECRET: test-jwt-secret-for-testing
+      REFRESH_TOKEN_SECRET: test-refresh-secret-for-testing
+      FRONTEND_URL: http://localhost:5173
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Backend install dependencies
+        working-directory: backend
+        run: npm ci
+      - name: Backend generate Prisma client
+        working-directory: backend
+        run: npx prisma generate
+      - name: Backend run migrations
+        working-directory: backend
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+      - name: Backend seed database
+        working-directory: backend
+        run: npx ts-node prisma/seed.ts
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+      - name: Backend start server
+        working-directory: backend
+        run: npx nest start &
+      - name: Wait for backend
+        run: |
+          for i in $(seq 1 30); do
+            curl -s http://localhost:3000/api/health && break
+            sleep 2
+          done
+
+      - name: Frontend install dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: npx playwright install chromium
+      - name: Frontend start dev server
+        working-directory: frontend
+        run: npm run dev &
+      - name: Wait for frontend
+        run: |
+          for i in $(seq 1 30); do
+            curl -s http://localhost:5173 && break
+            sleep 2
+          done
+      - name: Run Playwright tests
+        working-directory: frontend
+        run: npx playwright test
+      - name: Upload Playwright test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: frontend/test-results/
+
+  sonarcloud:
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install backend dependencies
+        run: npm ci
+        working-directory: backend
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+        working-directory: backend
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: SonarCloud Scan
+        uses: sonarsource/sonarcloud-github-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=ebidding-platform
+            -Dsonar.organization=my-org
+            -Dsonar.sources=backend/src,frontend/src
+            -Dsonar.tests=backend/test,frontend/src/test
+            -Dsonar.javascript.lcov.reportPaths=frontend/coverage/lcov.info
+            -Dsonar.typescript.lcov.reportPaths=backend/coverage/lcov.info
+            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/**,**/*.spec.ts,**/*.spec.tsx

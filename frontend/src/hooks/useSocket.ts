@@ -12,17 +12,10 @@ export function useSocket() {
   useEffect(() => {
     if (!user) return;
 
-    const token = sessionStorage.getItem('accessToken');
-    if (!token) return;
-
     const socket = io(SOCKET_URL, {
-      auth: { token },
+      withCredentials: true,
       transports: ['websocket', 'polling'],
     });
-
-    socket.on('connect', () => {});
-
-    socket.on('disconnect', () => {});
 
     socket.on('notification', (data: any) => {
       const listeners = listenersRef.current.get('notification');

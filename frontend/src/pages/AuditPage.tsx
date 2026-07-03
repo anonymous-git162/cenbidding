@@ -1,6 +1,6 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Box, Card, CardContent, Typography, TextField, List, ListItem, ListItemIcon, ListItemText,
+  Box, Card, CardContent, Typography, TextField, Autocomplete, List, ListItem, ListItemIcon, ListItemText,
   Divider, Alert, Button,
 } from '@mui/material';
 import api from '../services/api';
@@ -8,13 +8,37 @@ import { Icon } from '../components/Icon';
 
 export default function AuditPage() {
   const [inputValue, setInputValue] = useState('');
+  const [procurements, setProcurements] = useState<any[]>([]);
+  const [selectedProcurement, setSelectedProcurement] = useState<any | null>(null);
   const [logs, setLogs] = useState<any[]>([]);
   const [error, setError] = useState('');
   const [searched, setSearched] = useState(false);
   const [searching, setSearching] = useState(false);
 
-  const loadLogs = useCallback(async () => {
+  useEffect(() => {
+    api.get('/procurements', { params: { limit: 100 } }).then(r => setProcurements(r.data.data || [])).catch(() => {});
+  }, []);
+
+  async function loadByProcurementId(procId: string) {
+    setSearching(true);
+    setError('');
+    setLogs([]);
+    setSearched(false);
+    try {
+      const res = await api.get(`/audit/${procId}`);
+      setLogs(res.data.data || []);
+      setSearched(true);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to load audit logs');
+      setSearched(true);
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  async function loadLogs() {
     if (!inputValue.trim()) return;
+    setSelectedProcurement(null);
     setSearching(true);
     setError('');
     setLogs([]);
@@ -22,37 +46,47 @@ export default function AuditPage() {
     try {
       const trimmed = inputValue.trim();
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmed);
-
-      let res;
       if (isUUID) {
-        res = await api.get(`/audit/${trimmed}`);
+        await loadByProcurementId(trimmed);
       } else {
         const procRes = await api.get('/procurements', { params: { search: trimmed, limit: 1 } });
         if (procRes.data.data && procRes.data.data.length > 0) {
-          const procId = procRes.data.data[0].id;
-          res = await api.get(`/audit/${procId}`);
+          await loadByProcurementId(procRes.data.data[0].id);
         } else {
           throw new Error(`No procurement found matching "${trimmed}"`);
         }
       }
-      setLogs(res.data.data || []);
-      setSearched(true);
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || 'Failed to load audit logs');
       setSearched(true);
     } finally {
       setSearching(false);
     }
-  }, [inputValue]);
+  }
 
   return (
     <Box>
       <Typography variant="h5" fontWeight={700} sx={{ mb: 3 }}>Audit Logs</Typography>
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-      <Card sx={{ mb: 3 }}>
+      <Card elevation={0} sx={{ mb: 3, border: '1px solid', borderColor: 'divider' }}>
         <CardContent>
+          <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>Browse by Procurement</Typography>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end', mb: 2 }}>
+            <Autocomplete
+              options={procurements}
+              getOptionLabel={(o) => `${o.requestNo} — ${o.title}`}
+              value={selectedProcurement}
+              onChange={(_, v) => {
+                setSelectedProcurement(v);
+                if (v) loadByProcurementId(v.id);
+              }}
+              renderInput={(params) => <TextField {...params} label="Select Procurement" placeholder="Search by title or number..." />}
+              sx={{ flex: 1 }}
+            />
+          </Box>
+          <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>Or Search by UUID / Text</Typography>
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
-            <TextField fullWidth label="Procurement ID" value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder="Enter procurement UUID" />
+            <TextField fullWidth label="Search" value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder="Enter procurement UUID, title, or request number" />
             <Button variant="contained" onClick={loadLogs} disabled={!inputValue.trim() || searching}>
               {searching ? 'Searching...' : 'Search'}
             </Button>
@@ -65,7 +99,7 @@ export default function AuditPage() {
       )}
 
       {logs.length > 0 && (
-        <Card>
+        <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
           <CardContent>
             <Typography variant="h6" sx={{ mb: 2 }}>Audit Trail ({logs.length} events)</Typography>
             <List>

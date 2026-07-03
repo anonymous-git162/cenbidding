@@ -21,8 +21,9 @@ const ROLES = [
 interface Property { id: string; name: string; }
 interface Department { id: string; name: string; }
 
-export default function VendorsPage() {
+ export default function VendorsPage() {
   const [users, setUsers] = useState<any[]>([]);
+  const [pendingVendors, setPendingVendors] = useState<any[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
@@ -43,7 +44,7 @@ export default function VendorsPage() {
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [total, setTotal] = useState(0);
 
-  useEffect(() => { load(); loadProperties(); }, [searchQuery, roleFilter, statusFilter, page, rowsPerPage]);
+  useEffect(() => { load(); loadPending(); loadProperties(); }, [searchQuery, roleFilter, statusFilter, page, rowsPerPage]);
 
   const load = async () => {
     try {
@@ -59,6 +60,13 @@ export default function VendorsPage() {
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed');
     }
+  };
+
+  const loadPending = async () => {
+    try {
+      const res = await api.get('/vendors', { params: { status: 'PENDING_APPROVAL', limit: 50 } });
+      setPendingVendors(res.data.data || []);
+    } catch { setPendingVendors([]); }
   };
 
   const loadProperties = async () => {
@@ -288,6 +296,45 @@ export default function VendorsPage() {
           </Box>
         </CardContent>
       </Card>
+
+      {/* Pending Vendor Approvals */}
+      {pendingVendors.length > 0 && (
+        <Card elevation={0} sx={{ border: '1px solid', borderColor: 'warning.main', mb: 2 }}>
+          <Box sx={{ px: 3, py: 1.5, bgcolor: 'warning.50', borderBottom: '1px solid', borderColor: 'warning.main', display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Icon name="Warning" />
+            <Typography variant="subtitle2" fontWeight={600}>{pendingVendors.length} Vendor{pendingVendors.length > 1 ? 's' : ''} Pending Approval</Typography>
+          </Box>
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Company</TableCell>
+                  <TableCell>Contact</TableCell>
+                  <TableCell>Email</TableCell>
+                  <TableCell>Registered</TableCell>
+                  <TableCell align="right">Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {pendingVendors.map((v: any) => (
+                  <TableRow key={v.id}>
+                    <TableCell sx={{ fontWeight: 600 }}>{v.companyName}</TableCell>
+                    <TableCell>{v.contactName}</TableCell>
+                    <TableCell>{v.contactEmail}</TableCell>
+                    <TableCell>{new Date(v.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell align="right">
+                      <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
+                        <Button size="small" variant="contained" color="success" onClick={async () => { try { await api.post(`/vendors/${v.id}/approve`); loadPending(); load(); } catch {} }}>Approve</Button>
+                        <Button size="small" variant="outlined" color="error" onClick={async () => { try { await api.post(`/vendors/${v.id}/reject`); loadPending(); load(); } catch {} }}>Reject</Button>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Card>
+      )}
 
       {/* Users Table */}
       <Card>

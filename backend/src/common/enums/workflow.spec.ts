@@ -1,4 +1,9 @@
-import { WORKFLOW_TRANSITIONS, isValidTransition, getAllowedTransitions, getFlowSteps } from './index';
+import {
+  WORKFLOW_TRANSITIONS,
+  isValidTransition,
+  getAllowedTransitions,
+  getFlowSteps,
+} from './index';
 
 describe('Workflow Transitions', () => {
   describe('WORKFLOW_TRANSITIONS map', () => {
@@ -35,8 +40,12 @@ describe('Workflow Transitions', () => {
   describe('isValidTransition', () => {
     it('should return true for valid transitions', () => {
       expect(isValidTransition('DRAFT', 'SUBMITTED')).toBe(true);
-      expect(isValidTransition('SUBMITTED', 'UNDER_PROCUREMENT_REVIEW')).toBe(true);
-      expect(isValidTransition('UNDER_PROCUREMENT_REVIEW', 'APPROVED')).toBe(true);
+      expect(isValidTransition('SUBMITTED', 'UNDER_PROCUREMENT_REVIEW')).toBe(
+        true,
+      );
+      expect(isValidTransition('UNDER_PROCUREMENT_REVIEW', 'APPROVED')).toBe(
+        true,
+      );
       expect(isValidTransition('APPROVED', 'RFP_PUBLISHED')).toBe(true);
       expect(isValidTransition('AWARD_ANNOUNCED', 'COMPLETED')).toBe(true);
     });

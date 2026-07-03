@@ -1,11 +1,20 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 
 @Injectable()
 export class VendorInvitationService {
   constructor(private prisma: PrismaService) {}
 
-  async invite(procurementId: string, vendorIds: string[], userId: string, deadline?: string) {
+  async invite(
+    procurementId: string,
+    vendorIds: string[],
+    userId: string,
+    deadline?: string,
+  ) {
     const invitations = await Promise.all(
       vendorIds.map((vendorId) =>
         this.prisma.vendorInvitation.create({
@@ -37,14 +46,25 @@ export class VendorInvitationService {
   async findByProcurement(procurementId: string) {
     return this.prisma.vendorInvitation.findMany({
       where: { procurementId },
-      include: { vendor: { select: { id: true, companyName: true, contactName: true } } },
+      include: {
+        vendor: { select: { id: true, companyName: true, contactName: true } },
+      },
     });
   }
 
   async findAll() {
     return this.prisma.vendorInvitation.findMany({
       include: {
-        procurement: { select: { id: true, title: true, requestNo: true, requestType: true, status: true, submissionDeadline: true } },
+        procurement: {
+          select: {
+            id: true,
+            title: true,
+            requestNo: true,
+            requestType: true,
+            status: true,
+            submissionDeadline: true,
+          },
+        },
         vendor: { select: { id: true, companyName: true, contactName: true } },
       },
       orderBy: { invitedAt: 'desc' },
@@ -55,16 +75,27 @@ export class VendorInvitationService {
     return this.prisma.vendorInvitation.findMany({
       where: { vendor: { userId } },
       include: {
-        procurement: { select: { id: true, title: true, requestNo: true, status: true, submissionDeadline: true } },
+        procurement: {
+          select: {
+            id: true,
+            title: true,
+            requestNo: true,
+            status: true,
+            submissionDeadline: true,
+          },
+        },
       },
       orderBy: { invitedAt: 'desc' },
     });
   }
 
   async accept(id: string, userId: string) {
-    const invitation = await this.prisma.vendorInvitation.findUnique({ where: { id } });
+    const invitation = await this.prisma.vendorInvitation.findUnique({
+      where: { id },
+    });
     if (!invitation) throw new NotFoundException('Invitation not found');
-    if (invitation.invitationStatus !== 'PENDING') throw new BadRequestException('Invitation is not pending');
+    if (invitation.invitationStatus !== 'PENDING')
+      throw new BadRequestException('Invitation is not pending');
 
     const vendor = await this.prisma.vendor.findUnique({ where: { userId } });
     if (!vendor || vendor.id !== invitation.vendorId) {
@@ -78,7 +109,9 @@ export class VendorInvitationService {
   }
 
   async decline(id: string, userId: string) {
-    const invitation = await this.prisma.vendorInvitation.findUnique({ where: { id } });
+    const invitation = await this.prisma.vendorInvitation.findUnique({
+      where: { id },
+    });
     if (!invitation) throw new NotFoundException('Invitation not found');
 
     const vendor = await this.prisma.vendor.findUnique({ where: { userId } });

@@ -1,11 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotificationsService } from './notifications.service';
 import { PrismaService } from '../../database/prisma.service';
+import { EmailService } from '../email/email.service';
 import { mockPrisma, MockPrisma } from '../../../test/prisma-mock';
 
 describe('NotificationsService', () => {
   let service: NotificationsService;
   let prisma: MockPrisma;
+
+  const mockEmailService = { send: jest.fn(), sendBulk: jest.fn() };
 
   const mockNotification = {
     id: 'notif-1',
@@ -27,6 +30,7 @@ describe('NotificationsService', () => {
       providers: [
         NotificationsService,
         { provide: PrismaService, useValue: prisma },
+        { provide: EmailService, useValue: mockEmailService },
       ],
     }).compile();
 
@@ -34,6 +38,10 @@ describe('NotificationsService', () => {
   });
 
   describe('create', () => {
+    beforeEach(() => {
+      prisma.user.findUnique.mockResolvedValue({ email: 'test@test.com' });
+    });
+
     it('should create a notification', async () => {
       prisma.notification.create.mockResolvedValue(mockNotification);
       const result = await service.create('user-1', {
@@ -49,7 +57,10 @@ describe('NotificationsService', () => {
     });
 
     it('should use default type info', async () => {
-      prisma.notification.create.mockResolvedValue({ ...mockNotification, type: 'info' });
+      prisma.notification.create.mockResolvedValue({
+        ...mockNotification,
+        type: 'info',
+      });
       const result = await service.create('user-1', {
         title: 'Test',
         message: 'Test',
@@ -60,6 +71,13 @@ describe('NotificationsService', () => {
   });
 
   describe('createForUsers', () => {
+    beforeEach(() => {
+      prisma.user.findMany.mockResolvedValue([
+        { email: 'a@a.com' },
+        { email: 'b@b.com' },
+      ]);
+    });
+
     it('should create notifications for multiple users', async () => {
       prisma.notification.createMany.mockResolvedValue({ count: 2 });
       const result = await service.createForUsers(['user-1', 'user-2'], {

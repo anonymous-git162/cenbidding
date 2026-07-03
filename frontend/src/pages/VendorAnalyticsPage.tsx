@@ -1,4 +1,3 @@
-import { Icon } from '../components/Icon';
 import { useEffect, useState } from 'react';
 import {
   Box, Grid, Card, CardContent, Typography, LinearProgress, Chip,
@@ -10,6 +9,7 @@ import {
 } from 'recharts';
 import api from '../services/api';
 import StatusBadge from '../components/StatusBadge';
+import KpiCard from '../components/KpiCard';
 
 interface VendorAnalytics {
   vendor: { id: string; companyName: string };
@@ -143,19 +143,7 @@ export default function VendorAnalyticsPage() {
       <Grid container spacing={2} sx={{ mb: 3 }}>
         {kpiCards.map((kpi) => (
           <Grid item xs={4} sm={2} key={kpi.title}>
-            <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
-              <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <Box sx={{ width: 40, height: 40, borderRadius: 1.5, bgcolor: kpi.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Icon name={kpi.icon} />
-                  </Box>
-                  <Box>
-                    <Typography variant="h5" fontWeight={700} color={kpi.color}>{kpi.value}</Typography>
-                    <Typography variant="caption" color="text.secondary">{kpi.title}</Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
+            <KpiCard title={kpi.title} value={kpi.value} icon={kpi.icon} color={kpi.color} bg={kpi.bg} />
           </Grid>
         ))}
       </Grid>
@@ -177,8 +165,8 @@ export default function VendorAnalyticsPage() {
               {analytics.recentSubmissions.map((sub, idx) => (
                 <Box key={sub.id} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1.5, borderBottom: idx < analytics.recentSubmissions.length - 1 ? '1px solid' : 'none', borderColor: 'divider' }}>
                   <Box>
-                    <Typography variant="body2" fontWeight={500}>{sub.procurement.title}</Typography>
-                    <Typography variant="caption" color="text.secondary">{sub.procurement.requestNo} | ${sub.price.toLocaleString()} | {new Date(sub.submittedAt).toLocaleDateString()}</Typography>
+                    <Typography variant="body2" fontWeight={500}>{sub.procurement?.title}</Typography>
+                    <Typography variant="caption" color="text.secondary">{sub.procurement?.requestNo} | ${sub.price.toLocaleString()} | {new Date(sub.submittedAt).toLocaleDateString()}</Typography>
                   </Box>
                   <StatusBadge status={sub.status} />
                 </Box>
@@ -280,23 +268,7 @@ export default function VendorAnalyticsPage() {
             </DialogActions>
           </Dialog>
 
-          <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
-            <CardContent>
-              <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>Recent Submissions</Typography>
-              {analytics.recentSubmissions.length === 0 && (
-                <Typography variant="body2" color="text.secondary">No submissions yet</Typography>
-              )}
-              {analytics.recentSubmissions.map((sub, idx) => (
-                <Box key={sub.id} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1.5, borderBottom: idx < analytics.recentSubmissions.length - 1 ? '1px solid' : 'none', borderColor: 'divider' }}>
-                  <Box>
-                    <Typography variant="body2" fontWeight={500}>{sub.procurement.title}</Typography>
-                    <Typography variant="caption" color="text.secondary">{sub.procurement.requestNo} | ${sub.price.toLocaleString()} | {new Date(sub.submittedAt).toLocaleDateString()}</Typography>
-                  </Box>
-                  <StatusBadge status={sub.status} />
-                </Box>
-              ))}
-            </CardContent>
-          </Card>
+
 
           <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', mb: 3 }}>
             <CardContent>
@@ -312,7 +284,7 @@ export default function VendorAnalyticsPage() {
                       {order.requestNo} | {order.budgetEstimate ? `$${Number(order.budgetEstimate).toLocaleString()}` : 'N/A'} | {new Date(order.createdAt).toLocaleDateString()}
                     </Typography>
                   </Box>
-                  <Chip label={order.status.replace(/_/g, ' ')} size="small" color="success" />
+                  <Chip label={order.status?.replace(/_/g, ' ') || '—'} size="small" color="success" />
                 </Box>
               ))}
             </CardContent>

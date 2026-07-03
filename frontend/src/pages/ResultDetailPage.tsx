@@ -32,13 +32,15 @@ export default function ResultDetailPage() {
   if (error) return (
     <Box sx={{ m: 3 }}>
       <Button startIcon={<Icon name="ArrowBack" />} onClick={() => navigate('/results')} sx={{ mb: 2 }}>Back to Results</Button>
-      <Alert severity="info">Result is not available yet. The procurement may still be in progress.</Alert>
+      <Alert severity="warning" sx={{ mb: 2 }}>{error || 'Result is not available yet — the procurement may still be in progress or no award has been announced.'}</Alert>
+      <Button variant="outlined" startIcon={<Icon name="Visibility" />} onClick={() => navigate(`/procurements/${id}`)}>View Procurement Details</Button>
     </Box>
   );
   if (!result) return (
     <Box sx={{ m: 3 }}>
       <Button startIcon={<Icon name="ArrowBack" />} onClick={() => navigate('/results')} sx={{ mb: 2 }}>Back to Results</Button>
-      <Alert severity="info">No result found for this procurement.</Alert>
+      <Alert severity="info" sx={{ mb: 2 }}>No result found for this procurement.</Alert>
+      <Button variant="outlined" startIcon={<Icon name="Visibility" />} onClick={() => navigate(`/procurements/${id}`)}>View Procurement Details</Button>
     </Box>
   );
 

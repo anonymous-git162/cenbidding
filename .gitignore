@@ -8,3 +8,4 @@ coverage/
 .mimocode/
 session-*
 Enterprise *
+storybook-static/

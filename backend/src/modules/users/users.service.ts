@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { Prisma, UserRole } from '@prisma/client';
@@ -9,7 +14,16 @@ export class UsersService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(dto: PaginationDto, requestorRole?: string) {
-    const { page = 1, limit = 20, search, sortBy = 'createdAt', sortOrder = 'desc', role, isActive, locked } = dto;
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      role,
+      isActive,
+      locked,
+    } = dto;
     const where: Prisma.UserWhereInput = {};
 
     // Non-admin users cannot see admin accounts
@@ -90,7 +104,14 @@ export class UsersService {
   async findById(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
-      select: { id: true, email: true, fullName: true, role: true, isActive: true, createdAt: true },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+      },
     });
     if (!user) throw new NotFoundException('User not found');
     return user;
@@ -107,14 +128,25 @@ export class UsersService {
     });
   }
 
-  async create(data: { email: string; password: string; fullName: string; role: UserRole; propertyId?: string; departmentId?: string; managerId?: string; companyName?: string }) {
+  async create(data: {
+    email: string;
+    password: string;
+    fullName: string;
+    role: UserRole;
+    propertyId?: string;
+    departmentId?: string;
+    managerId?: string;
+    companyName?: string;
+  }) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
       throw new BadRequestException('Invalid email format');
     }
     if (!data.password || data.password.length < 6) {
       throw new BadRequestException('Password must be at least 6 characters');
     }
-    const existing = await this.prisma.user.findUnique({ where: { email: data.email } });
+    const existing = await this.prisma.user.findUnique({
+      where: { email: data.email },
+    });
     if (existing) throw new ConflictException('Email already registered');
 
     const passwordHash = await bcrypt.hash(data.password, 10);
@@ -128,7 +160,17 @@ export class UsersService {
         departmentId: data.departmentId || null,
         managerId: data.managerId || null,
       },
-      select: { id: true, email: true, fullName: true, role: true, isActive: true, propertyId: true, departmentId: true, managerId: true, createdAt: true },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+        isActive: true,
+        propertyId: true,
+        departmentId: true,
+        managerId: true,
+        createdAt: true,
+      },
     });
 
     if (data.role === 'VENDOR' && data.companyName) {
@@ -145,7 +187,20 @@ export class UsersService {
     return user;
   }
 
-  async update(id: string, data: { email?: string; fullName?: string; role?: UserRole; isActive?: boolean; propertyId?: string; departmentId?: string; managerId?: string; password?: string; companyName?: string }) {
+  async update(
+    id: string,
+    data: {
+      email?: string;
+      fullName?: string;
+      role?: UserRole;
+      isActive?: boolean;
+      propertyId?: string;
+      departmentId?: string;
+      managerId?: string;
+      password?: string;
+      companyName?: string;
+    },
+  ) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
 
@@ -156,7 +211,9 @@ export class UsersService {
       throw new BadRequestException('Password must be at least 6 characters');
     }
     if (data.email && data.email !== user.email) {
-      const existing = await this.prisma.user.findUnique({ where: { email: data.email } });
+      const existing = await this.prisma.user.findUnique({
+        where: { email: data.email },
+      });
       if (existing) throw new ConflictException('Email already registered');
     }
 
@@ -177,19 +234,40 @@ export class UsersService {
     const updatedUser = await this.prisma.user.update({
       where: { id },
       data: updateData,
-      select: { id: true, email: true, fullName: true, role: true, isActive: true, propertyId: true, departmentId: true, managerId: true, createdAt: true },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+        isActive: true,
+        propertyId: true,
+        departmentId: true,
+        managerId: true,
+        createdAt: true,
+      },
     });
 
     if (data.role === 'VENDOR' && data.companyName) {
-      const existingVendor = await this.prisma.vendor.findUnique({ where: { userId: id } });
+      const existingVendor = await this.prisma.vendor.findUnique({
+        where: { userId: id },
+      });
       if (existingVendor) {
         await this.prisma.vendor.update({
           where: { userId: id },
-          data: { companyName: data.companyName!, contactName: data.fullName || user.fullName, contactEmail: data.email || user.email },
+          data: {
+            companyName: data.companyName,
+            contactName: data.fullName || user.fullName,
+            contactEmail: data.email || user.email,
+          },
         });
       } else {
         await this.prisma.vendor.create({
-          data: { companyName: data.companyName!, contactName: data.fullName || user.fullName, contactEmail: data.email || user.email, userId: id },
+          data: {
+            companyName: data.companyName,
+            contactName: data.fullName || user.fullName,
+            contactEmail: data.email || user.email,
+            userId: id,
+          },
         });
       }
     }
@@ -200,7 +278,8 @@ export class UsersService {
   async remove(id: string) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
-    if (user.role === 'ADMIN') throw new BadRequestException('Cannot delete admin users');
+    if (user.role === 'ADMIN')
+      throw new BadRequestException('Cannot delete admin users');
 
     return this.prisma.user.delete({
       where: { id },
@@ -215,7 +294,13 @@ export class UsersService {
     return this.prisma.user.update({
       where: { id },
       data: { failedLoginAttempts: 0, lockedUntil: null },
-      select: { id: true, email: true, fullName: true, failedLoginAttempts: true, lockedUntil: true },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        failedLoginAttempts: true,
+        lockedUntil: true,
+      },
     });
   }
 
@@ -227,7 +312,13 @@ export class UsersService {
     return this.prisma.user.update({
       where: { id },
       data: { passwordHash },
-      select: { id: true, email: true, fullName: true, role: true, isActive: true },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+        isActive: true,
+      },
     });
   }
 }

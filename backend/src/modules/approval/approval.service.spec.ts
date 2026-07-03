@@ -39,28 +39,51 @@ describe('ApprovalService', () => {
   describe('routeToApprover', () => {
     it('should route to requester manager', async () => {
       prisma.procurement.findUnique.mockResolvedValue(mockProcurement);
-      prisma.procurement.update.mockResolvedValue({ ...mockProcurement, assignedApproverId: 'manager-1' });
+      prisma.procurement.update.mockResolvedValue({
+        ...mockProcurement,
+        assignedApproverId: 'manager-1',
+      });
 
       const result = await service.routeToApprover('proc-1');
       expect(result.assignedApproverId).toBe('manager-1');
     });
 
     it('should fallback to any active approver if no manager', async () => {
-      const noManager = { ...mockProcurement, requester: { id: 'requester-1', managerId: null, departmentId: 'dept-1' } };
+      const noManager = {
+        ...mockProcurement,
+        requester: {
+          id: 'requester-1',
+          managerId: null,
+          departmentId: 'dept-1',
+        },
+      };
       prisma.procurement.findUnique.mockResolvedValue(noManager);
       prisma.user.findFirst.mockResolvedValueOnce({ id: 'approver-1' });
-      prisma.procurement.update.mockResolvedValue({ ...noManager, assignedApproverId: 'approver-1' });
+      prisma.procurement.update.mockResolvedValue({
+        ...noManager,
+        assignedApproverId: 'approver-1',
+      });
 
       const result = await service.routeToApprover('proc-1');
       expect(result.assignedApproverId).toBe('approver-1');
     });
 
     it('should fallback to department approver if no general approver', async () => {
-      const noManager = { ...mockProcurement, requester: { id: 'requester-1', managerId: null, departmentId: 'dept-1' } };
+      const noManager = {
+        ...mockProcurement,
+        requester: {
+          id: 'requester-1',
+          managerId: null,
+          departmentId: 'dept-1',
+        },
+      };
       prisma.procurement.findUnique.mockResolvedValue(noManager);
       prisma.user.findFirst.mockResolvedValueOnce(null);
       prisma.user.findFirst.mockResolvedValueOnce({ id: 'dept-approver-1' });
-      prisma.procurement.update.mockResolvedValue({ ...noManager, assignedApproverId: 'dept-approver-1' });
+      prisma.procurement.update.mockResolvedValue({
+        ...noManager,
+        assignedApproverId: 'dept-approver-1',
+      });
 
       const result = await service.routeToApprover('proc-1');
       expect(result.assignedApproverId).toBe('dept-approver-1');
@@ -68,7 +91,9 @@ describe('ApprovalService', () => {
 
     it('should throw NotFoundException for missing procurement', async () => {
       prisma.procurement.findUnique.mockResolvedValue(null);
-      await expect(service.routeToApprover('invalid')).rejects.toThrow(NotFoundException);
+      await expect(service.routeToApprover('invalid')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -76,7 +101,11 @@ describe('ApprovalService', () => {
     it('should submit evaluation to pending approval', async () => {
       prisma.procurement.findUnique.mockResolvedValue(mockProcurement);
       prisma.user.findFirst.mockResolvedValue(null);
-      prisma.procurement.update.mockResolvedValue({ ...mockProcurement, status: 'PENDING_APPROVAL', currentOwnerRole: 'APPROVER' });
+      prisma.procurement.update.mockResolvedValue({
+        ...mockProcurement,
+        status: 'PENDING_APPROVAL',
+        currentOwnerRole: 'APPROVER',
+      });
       prisma.procurementTimeline.create.mockResolvedValue({});
 
       const result = await service.submitForApproval('proc-1', 'user-1');
@@ -84,13 +113,20 @@ describe('ApprovalService', () => {
     });
 
     it('should throw if procurement status is not EVALUATION', async () => {
-      prisma.procurement.findUnique.mockResolvedValue({ ...mockProcurement, status: 'DRAFT' });
-      await expect(service.submitForApproval('proc-1', 'user-1')).rejects.toThrow(BadRequestException);
+      prisma.procurement.findUnique.mockResolvedValue({
+        ...mockProcurement,
+        status: 'DRAFT',
+      });
+      await expect(
+        service.submitForApproval('proc-1', 'user-1'),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw NotFoundException for missing procurement', async () => {
       prisma.procurement.findUnique.mockResolvedValue(null);
-      await expect(service.submitForApproval('invalid', 'user-1')).rejects.toThrow(NotFoundException);
+      await expect(
+        service.submitForApproval('invalid', 'user-1'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -104,18 +140,34 @@ describe('ApprovalService', () => {
 
   describe('approve', () => {
     it('should approve a pending procurement', async () => {
-      prisma.procurement.findUnique.mockResolvedValue({ ...mockProcurement, status: 'PENDING_APPROVAL' });
+      prisma.procurement.findUnique.mockResolvedValue({
+        ...mockProcurement,
+        status: 'PENDING_APPROVAL',
+      });
       prisma.approval.create.mockResolvedValue({});
-      prisma.procurement.update.mockResolvedValue({ ...mockProcurement, status: 'AWARD_APPROVED', currentOwnerRole: 'PROCUREMENT' });
+      prisma.procurement.update.mockResolvedValue({
+        ...mockProcurement,
+        status: 'AWARD_APPROVED',
+        currentOwnerRole: 'PROCUREMENT',
+      });
       prisma.procurementTimeline.create.mockResolvedValue({});
 
-      const result = await service.approve('proc-1', 'approver-1', 'Looks good');
+      const result = await service.approve(
+        'proc-1',
+        'approver-1',
+        'Looks good',
+      );
       expect(result).toHaveProperty('status', 'AWARD_APPROVED');
     });
 
     it('should throw if not pending approval', async () => {
-      prisma.procurement.findUnique.mockResolvedValue({ ...mockProcurement, status: 'DRAFT' });
-      await expect(service.approve('proc-1', 'approver-1')).rejects.toThrow(BadRequestException);
+      prisma.procurement.findUnique.mockResolvedValue({
+        ...mockProcurement,
+        status: 'DRAFT',
+      });
+      await expect(service.approve('proc-1', 'approver-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -123,7 +175,11 @@ describe('ApprovalService', () => {
     it('should return a pending procurement for revision', async () => {
       prisma.procurement.findUnique.mockResolvedValue(mockProcurement);
       prisma.approval.create.mockResolvedValue({});
-      prisma.procurement.update.mockResolvedValue({ ...mockProcurement, status: 'RETURNED_FROM_APPROVAL', currentOwnerRole: 'PROCUREMENT' });
+      prisma.procurement.update.mockResolvedValue({
+        ...mockProcurement,
+        status: 'RETURNED_FROM_APPROVAL',
+        currentOwnerRole: 'PROCUREMENT',
+      });
       prisma.procurementTimeline.create.mockResolvedValue({});
 
       const result = await service.return('proc-1', 'approver-1', 'Fix budget');
@@ -135,10 +191,19 @@ describe('ApprovalService', () => {
     it('should reject a procurement', async () => {
       prisma.procurement.findUnique.mockResolvedValue(mockProcurement);
       prisma.approval.create.mockResolvedValue({});
-      prisma.procurement.update.mockResolvedValue({ ...mockProcurement, status: 'REJECTED', currentOwnerRole: 'CLOSED', finalDecisionReason: 'Not suitable' });
+      prisma.procurement.update.mockResolvedValue({
+        ...mockProcurement,
+        status: 'REJECTED',
+        currentOwnerRole: 'CLOSED',
+        finalDecisionReason: 'Not suitable',
+      });
       prisma.procurementTimeline.create.mockResolvedValue({});
 
-      const result = await service.reject('proc-1', 'approver-1', 'Not suitable');
+      const result = await service.reject(
+        'proc-1',
+        'approver-1',
+        'Not suitable',
+      );
       expect(result).toHaveProperty('status', 'REJECTED');
     });
   });
@@ -146,7 +211,13 @@ describe('ApprovalService', () => {
   describe('getOverdueApprovals', () => {
     it('should return overdue approvals', async () => {
       const oldDate = new Date(Date.now() - 48 * 60 * 60 * 1000);
-      prisma.procurement.findMany.mockResolvedValue([{ ...mockProcurement, updatedAt: oldDate, requester: { id: 'r-1', fullName: 'Requester' } }]);
+      prisma.procurement.findMany.mockResolvedValue([
+        {
+          ...mockProcurement,
+          updatedAt: oldDate,
+          requester: { id: 'r-1', fullName: 'Requester' },
+        },
+      ]);
       const result = await service.getOverdueApprovals();
       expect(result).toHaveLength(1);
       expect(result[0].hoursPending).toBeGreaterThan(24);
@@ -154,7 +225,13 @@ describe('ApprovalService', () => {
 
     it('should return empty for none overdue', async () => {
       const recent = new Date();
-      prisma.procurement.findMany.mockResolvedValue([{ ...mockProcurement, updatedAt: recent, requester: { id: 'r-1', fullName: 'Requester' } }]);
+      prisma.procurement.findMany.mockResolvedValue([
+        {
+          ...mockProcurement,
+          updatedAt: recent,
+          requester: { id: 'r-1', fullName: 'Requester' },
+        },
+      ]);
       const result = await service.getOverdueApprovals();
       expect(result).toHaveLength(0);
     });
@@ -163,7 +240,11 @@ describe('ApprovalService', () => {
   describe('escalateApproval', () => {
     it('should escalate overdue approval', async () => {
       const oldDate = new Date(Date.now() - 48 * 60 * 60 * 1000);
-      prisma.procurement.findUnique.mockResolvedValue({ ...mockProcurement, status: 'PENDING_APPROVAL', updatedAt: oldDate });
+      prisma.procurement.findUnique.mockResolvedValue({
+        ...mockProcurement,
+        status: 'PENDING_APPROVAL',
+        updatedAt: oldDate,
+      });
       prisma.user.findMany.mockResolvedValue([{ id: 'admin-1' }]);
       prisma.notification.create.mockResolvedValue({});
       prisma.procurementTimeline.create.mockResolvedValue({});
@@ -174,8 +255,13 @@ describe('ApprovalService', () => {
     });
 
     it('should throw if not pending approval', async () => {
-      prisma.procurement.findUnique.mockResolvedValue({ ...mockProcurement, status: 'DRAFT' });
-      await expect(service.escalateApproval('proc-1')).rejects.toThrow(BadRequestException);
+      prisma.procurement.findUnique.mockResolvedValue({
+        ...mockProcurement,
+        status: 'DRAFT',
+      });
+      await expect(service.escalateApproval('proc-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });

@@ -87,7 +87,7 @@ export default function ApprovalsPage() {
                     <TableCell sx={{ fontWeight: 600 }}>{item.requestNo}</TableCell>
                     <TableCell>{item.title}</TableCell>
                     <TableCell>
-                      <Chip label={item.requestType} size="small" sx={{ bgcolor: `${typeColor}15`, color: typeColor, fontWeight: 600 }} />
+                      <Chip label={item.requestType} size="small" sx={{ bgcolor: 'action.hover', color: typeColor, fontWeight: 600 }} />
                     </TableCell>
                     <TableCell>{item.requester?.fullName || '-'}</TableCell>
                     <TableCell>{item.budgetEstimate ? `$${Number(item.budgetEstimate).toLocaleString()}` : '—'}</TableCell>

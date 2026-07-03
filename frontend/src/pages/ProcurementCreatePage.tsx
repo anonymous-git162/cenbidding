@@ -7,32 +7,13 @@ import {
   InputAdornment, Tooltip, CircularProgress, Collapse, Dialog, DialogTitle, DialogContent, DialogActions,
 } from '@mui/material';
 import api from '../services/api';
+import { CURRENCIES, CATEGORIES } from '../utils/constants';
+import FileUploader from '../components/FileUploader';
 
 const REQUEST_TYPES = [
   { value: 'RFI', label: 'RFI', subtitle: 'Request for Information', description: 'Gather information from vendors before making procurement decisions', color: '#6B7280', icon: 'Search' },
   { value: 'RFP', label: 'RFP', subtitle: 'Request for Proposal', description: 'Vendors submit detailed proposals with approach, methodology, and pricing', color: '#2563EB', icon: 'Assignment' },
   { value: 'RFQ', label: 'RFQ', subtitle: 'Request for Quotation', description: 'Vendors provide accurate pricing information for specific goods or offered services', color: '#F59E0B', icon: 'Gavel' },
-];
-
-const CATEGORIES = [
-  'IT Infrastructure', 'Software & Licensing', 'Office Supplies', 'Furniture & Equipment',
-  'Facilities & Maintenance', 'Professional Services', 'Marketing & Advertising',
-  'Travel & Transportation', 'Legal Services', 'Consulting', 'Training & Development',
-  'Construction & Renovation', 'Security Services', 'Other',
-];
-
-const CURRENCIES = [
-  { code: 'USD', label: 'USD - US Dollar', symbol: '$' },
-  { code: 'EUR', label: 'EUR - Euro', symbol: '€' },
-  { code: 'GBP', label: 'GBP - British Pound', symbol: '£' },
-  { code: 'THB', label: 'THB - Thai Baht', symbol: '฿' },
-  { code: 'JPY', label: 'JPY - Japanese Yen', symbol: '¥' },
-  { code: 'CNY', label: 'CNY - Chinese Yuan', symbol: '¥' },
-  { code: 'SGD', label: 'SGD - Singapore Dollar', symbol: 'S$' },
-  { code: 'AUD', label: 'AUD - Australian Dollar', symbol: 'A$' },
-  { code: 'CAD', label: 'CAD - Canadian Dollar', symbol: 'C$' },
-  { code: 'MYR', label: 'MYR - Malaysian Ringgit', symbol: 'RM' },
-  { code: 'IDR', label: 'IDR - Indonesian Rupiah', symbol: 'Rp' },
 ];
 
 const STEPS = ['Request Type', 'Basic Information', 'Budget & Category', 'Review & Submit'];
@@ -62,9 +43,7 @@ export default function ProcurementCreatePage() {
   const [aiTor, setAiTor] = useState('');
   const [properties, setProperties] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
-  const [attachments, setAttachments] = useState<{ id: string; fileName: string; fileSize: number }[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [fileAttachments, setFileAttachments] = useState<{ id: string; fileName: string; fileSize: number }[]>([]);
 
   useEffect(() => {
     api.get('/users/properties').then((res) => setProperties(res.data || [])).catch(() => {});
@@ -103,29 +82,6 @@ export default function ProcurementCreatePage() {
   const handleAcceptTor = () => {
     setForm({ ...form, description: aiTor });
     setAiDialogOpen(false);
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 10 * 1024 * 1024) { setApiError('File size must be under 10MB'); return; }
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const res = await api.post('/files/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-      setAttachments((prev) => [...prev, { id: res.data.id, fileName: res.data.fileName, fileSize: res.data.fileSize }]);
-    } catch {
-      setApiError('Failed to upload file');
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
-
-  const handleRemoveAttachment = async (id: string) => {
-    try { await api.delete(`/files/${id}`); } catch {}
-    setAttachments((prev) => prev.filter((a) => a.id !== id));
   };
 
   const validate = (step: number): boolean => {
@@ -172,7 +128,7 @@ export default function ProcurementCreatePage() {
       if (form.budgetEstimate) payload.budgetEstimate = parseFloat(form.budgetEstimate);
       if (form.propertyId && form.propertyId !== 'general') payload.propertyId = form.propertyId;
       if (form.departmentId) payload.departmentId = form.departmentId;
-      if (attachments.length > 0) payload.fileIds = attachments.map((a) => a.id);
+      if (fileAttachments.length > 0) payload.fileIds = fileAttachments.map((a) => a.id);
 
       const res = await api.post('/procurements', payload);
       if (submit) await api.post(`/procurements/${res.data.id}/submit`);
@@ -205,8 +161,8 @@ export default function ProcurementCreatePage() {
                 onClick={() => setForm({ ...form, requestType: type.value })}
                 sx={{
                   p: 0, cursor: 'pointer', border: '2px solid', borderColor: selected ? type.color : 'divider',
-                  bgcolor: selected ? `${type.color}08` : 'white', borderRadius: 2, transition: 'all 0.2s',
-                  overflow: 'hidden', '&:hover': { borderColor: type.color, boxShadow: '0 4px 16px rgba(0,0,0,0.08)' },
+                  bgcolor: selected ? `${type.color}08` : 'background.paper', borderRadius: 2, transition: 'all 0.2s',
+                  overflow: 'hidden', '&:hover': { borderColor: type.color },
                 }}
               >
                 <Box sx={{ bgcolor: type.color, color: 'white', px: 2, py: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -279,30 +235,7 @@ export default function ProcurementCreatePage() {
         </Grid>
         <Grid item xs={12}>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>Attachments</Typography>
-          <input ref={fileInputRef} type="file" hidden onChange={handleFileUpload} />
-          <Button
-            variant="outlined" size="small"
-            startIcon={uploading ? <CircularProgress size={16} /> : <Icon name="AttachFile" />}
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-          >
-            {uploading ? 'Uploading...' : 'Attach File'}
-          </Button>
-          <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>Max 10MB</Typography>
-          {attachments.length > 0 && (
-            <Box sx={{ mt: 1.5, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-              {attachments.map((att) => (
-                    <Box key={att.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, bgcolor: 'action.hover', border: '1px solid', borderColor: 'divider', borderRadius: 1, px: 1.5, py: 0.5 }}>
-                  <Icon name="Description" sx={{ fontSize: 18, color: 'text.secondary' }} />
-                  <Typography variant="body2" sx={{ flex: 1 }}>{att.fileName}</Typography>
-                  <Typography variant="caption" color="text.secondary">{(att.fileSize / 1024).toFixed(0)}KB</Typography>
-                  <Button size="small" color="error" onClick={() => handleRemoveAttachment(att.id)} sx={{ minWidth: 0, p: 0 }}>
-                    <Icon name="Close" sx={{ fontSize: 16 }} />
-                  </Button>
-                </Box>
-              ))}
-            </Box>
-          )}
+          <FileUploader onAttachmentsChange={setFileAttachments} />
         </Grid>
       </Grid>
     </Box>
@@ -417,7 +350,7 @@ export default function ProcurementCreatePage() {
           </Box>
           <CardContent sx={{ p: 0 }}>
             {sections.map((section, idx) => (
-              <Box key={section.label} sx={{ px: 3, py: 2, borderBottom: idx < sections.length - 1 ? '1px solid #F3F4F6' : 'none', display: 'flex', gap: 2 }}>
+              <Box key={section.label} sx={{ px: 3, py: 2, borderBottom: idx < sections.length - 1 ? '1px solid' : 'none', borderColor: 'divider', display: 'flex', gap: 2 }}>
                 <Typography variant="body2" color="text.secondary" sx={{ minWidth: 140, fontWeight: 500 }}>{section.label}</Typography>
                 <Typography variant="body2" sx={{ flex: 1, ...(section.color ? { color: section.color, fontWeight: 600 } : {}) }}>
                   {section.value}
@@ -425,18 +358,18 @@ export default function ProcurementCreatePage() {
               </Box>
             ))}
             {form.description && (
-              <Box sx={{ px: 3, py: 2, borderTop: '1px solid #F3F4F6' }}>
+              <Box sx={{ px: 3, py: 2, borderTop: '1px solid', borderColor: 'divider' }}>
                 <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mb: 1 }}>Description</Typography>
                 <Box sx={{ bgcolor: 'action.hover', border: '1px solid', borderColor: 'divider', borderRadius: 1.5, px: 2.5, py: 2, minHeight: 80 }}>
                   <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>{form.description}</Typography>
                 </Box>
               </Box>
             )}
-            {attachments.length > 0 && (
-              <Box sx={{ px: 3, py: 2, borderTop: '1px solid #F3F4F6' }}>
-                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mb: 1 }}>Attachments ({attachments.length})</Typography>
+            {fileAttachments.length > 0 && (
+              <Box sx={{ px: 3, py: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mb: 1 }}>Attachments ({fileAttachments.length})</Typography>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                  {attachments.map((att) => (
+                  {fileAttachments.map((att) => (
                 <Box key={att.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, bgcolor: 'action.hover', border: '1px solid', borderColor: 'divider', borderRadius: 1, px: 1.5, py: 0.5 }}>
                       <Icon name="Description" sx={{ fontSize: 18, color: 'text.secondary' }} />
                       <Typography variant="body2" sx={{ flex: 1 }}>{att.fileName}</Typography>
@@ -530,7 +463,7 @@ export default function ProcurementCreatePage() {
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Review the generated TOR below. You can accept it to fill the description field, or close to keep your existing text.
           </Typography>
-          <Paper sx={{ p: 2, bgcolor: 'grey.50', maxHeight: 400, overflow: 'auto' }}>
+          <Paper sx={{ p: 2, bgcolor: 'action.hover', maxHeight: 400, overflow: 'auto' }}>
             <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace', fontSize: '0.85rem' }}>
               {aiTor}
             </Typography>

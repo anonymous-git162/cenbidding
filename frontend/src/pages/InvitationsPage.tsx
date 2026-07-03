@@ -310,7 +310,7 @@ export default function InvitationsPage() {
               })}
               {filteredInvitations.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={user?.role === 'VENDOR' ? 8 : 7} align="center">
+                  <TableCell colSpan={user?.role === 'VENDOR' ? 7 : 8} align="center">
                     <Box sx={{ py: 4 }}>
                       <Icon name="Mail" />
                       <Typography color="text.secondary" sx={{ mt: 1 }}>No invitations yet</Typography>

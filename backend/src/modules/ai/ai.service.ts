@@ -38,8 +38,10 @@ export class AiService {
   constructor(private configService: ConfigService) {
     this.provider = this.configService.get<string>('AI_PROVIDER') || 'groq';
     this.groqApiKey = this.configService.get<string>('GROQ_API_KEY') || '';
-    this.groqModel = this.configService.get<string>('GROQ_MODEL') || 'llama-3.3-70b-versatile';
-    this.copilotSecret = this.configService.get<string>('COPILOT_STUDIO_SECRET') || '';
+    this.groqModel =
+      this.configService.get<string>('GROQ_MODEL') || 'llama-3.3-70b-versatile';
+    this.copilotSecret =
+      this.configService.get<string>('COPILOT_STUDIO_SECRET') || '';
     this.logger.log(`AI provider: ${this.provider}`);
   }
 
@@ -62,7 +64,7 @@ export class AiService {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.groqApiKey}`,
+        Authorization: `Bearer ${this.groqApiKey}`,
       },
       body: JSON.stringify({
         model: this.groqModel,
@@ -89,18 +91,25 @@ export class AiService {
     }
 
     try {
-      const conversationResponse = await fetch('https://directline.botframework.com/v3/directline/conversations', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.copilotSecret}`,
-          'Content-Type': 'application/json',
+      const conversationResponse = await fetch(
+        'https://directline.botframework.com/v3/directline/conversations',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.copilotSecret}`,
+            'Content-Type': 'application/json',
+          },
         },
-      });
+      );
 
       if (!conversationResponse.ok) {
         const errText = await conversationResponse.text();
-        this.logger.error(`Copilot conversation error: ${conversationResponse.status} - ${errText}`);
-        throw new Error(`Conversation creation failed: ${conversationResponse.status}`);
+        this.logger.error(
+          `Copilot conversation error: ${conversationResponse.status} - ${errText}`,
+        );
+        throw new Error(
+          `Conversation creation failed: ${conversationResponse.status}`,
+        );
       }
 
       const convData = await conversationResponse.json();
@@ -111,7 +120,7 @@ export class AiService {
       const messageResponse = await fetch(sendUrl, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -125,21 +134,24 @@ export class AiService {
         throw new Error(`Message send failed: ${messageResponse.status}`);
       }
 
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      await new Promise((resolve) => setTimeout(resolve, 5000));
 
       const activitiesResponse = await fetch(`${sendUrl}?watermark=0`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
       if (!activitiesResponse.ok) {
-        throw new Error(`Activities fetch failed: ${activitiesResponse.status}`);
+        throw new Error(
+          `Activities fetch failed: ${activitiesResponse.status}`,
+        );
       }
 
       const activitiesData = await activitiesResponse.json();
       const botMessages = activitiesData.activities?.filter(
-        (a: any) => a.from?.id !== 'ebidding-system' && a.type === 'message' && a.text
+        (a: any) =>
+          a.from?.id !== 'ebidding-system' && a.type === 'message' && a.text,
       );
 
       if (botMessages && botMessages.length > 0) {
@@ -198,7 +210,9 @@ Generate the complete TOR document now:`;
   }
 
   private buildScorePrompt(input: VendorScoreRequest): string {
-    const avgPrice = input.allVendorPrices.reduce((a, b) => a + b, 0) / input.allVendorPrices.length;
+    const avgPrice =
+      input.allVendorPrices.reduce((a, b) => a + b, 0) /
+      input.allVendorPrices.length;
     const minPrice = Math.min(...input.allVendorPrices);
     const maxPrice = Math.max(...input.allVendorPrices);
 
@@ -231,7 +245,10 @@ Respond in this exact JSON format:
 }`;
   }
 
-  private parseScoreResponse(response: string, input: VendorScoreRequest): VendorScoreResponse {
+  private parseScoreResponse(
+    response: string,
+    input: VendorScoreRequest,
+  ): VendorScoreResponse {
     try {
       const jsonMatch = response.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
@@ -240,8 +257,14 @@ Respond in this exact JSON format:
           score: Math.min(100, Math.max(0, parsed.score || 50)),
           reasoning: parsed.reasoning || 'AI scoring completed',
           breakdown: {
-            priceCompetitiveness: Math.min(40, Math.max(0, parsed.priceCompetitiveness || 20)),
-            marketPosition: Math.min(20, Math.max(0, parsed.marketPosition || 10)),
+            priceCompetitiveness: Math.min(
+              40,
+              Math.max(0, parsed.priceCompetitiveness || 20),
+            ),
+            marketPosition: Math.min(
+              20,
+              Math.max(0, parsed.marketPosition || 10),
+            ),
             completeness: Math.min(20, Math.max(0, parsed.completeness || 10)),
             baseQuality: Math.min(20, Math.max(0, parsed.baseQuality || 10)),
           },
@@ -254,14 +277,24 @@ Respond in this exact JSON format:
   }
 
   private fallbackScoring(input: VendorScoreRequest): VendorScoreResponse {
-    const avgPrice = input.allVendorPrices.reduce((a, b) => a + b, 0) / input.allVendorPrices.length;
+    const avgPrice =
+      input.allVendorPrices.reduce((a, b) => a + b, 0) /
+      input.allVendorPrices.length;
     const maxPrice = Math.max(...input.allVendorPrices);
     const minPrice = Math.min(...input.allVendorPrices);
     const priceRange = maxPrice - minPrice || 1;
 
-    const priceScore = Math.round(((maxPrice - input.price) / priceRange) * 40 + 60);
-    const competitivenessScore = input.price <= avgPrice ? 20 : Math.round(20 * (1 - (input.price - avgPrice) / priceRange));
-    const totalScore = Math.min(100, Math.max(0, priceScore + 20 + competitivenessScore + 20));
+    const priceScore = Math.round(
+      ((maxPrice - input.price) / priceRange) * 40 + 60,
+    );
+    const competitivenessScore =
+      input.price <= avgPrice
+        ? 20
+        : Math.round(20 * (1 - (input.price - avgPrice) / priceRange));
+    const totalScore = Math.min(
+      100,
+      Math.max(0, priceScore + 20 + competitivenessScore + 20),
+    );
 
     return {
       score: totalScore,

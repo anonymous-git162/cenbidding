@@ -36,7 +36,7 @@ describe('AuthService', () => {
     get: (key: string) => {
       const config = configuration();
       const paths = key.split('.');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       let value: any = config;
       for (const p of paths) {
         value = value?.[p];
@@ -63,7 +63,10 @@ describe('AuthService', () => {
   describe('login', () => {
     it('should return tokens and user on valid credentials', async () => {
       prisma.user.findUnique.mockResolvedValue(mockUser);
-      const result = await service.login({ email: 'test@example.com', password: 'TestPass1' });
+      const result = await service.login({
+        email: 'test@example.com',
+        password: 'TestPass1',
+      });
 
       expect(result).toHaveProperty('accessToken');
       expect(result).toHaveProperty('refreshToken');
@@ -84,12 +87,18 @@ describe('AuthService', () => {
       prisma.user.findUnique.mockResolvedValue(null);
 
       await expect(
-        service.login({ email: 'nonexistent@example.com', password: 'TestPass1' }),
+        service.login({
+          email: 'nonexistent@example.com',
+          password: 'TestPass1',
+        }),
       ).rejects.toThrow('Invalid email or password');
     });
 
     it('should return generic error for deactivated account', async () => {
-      prisma.user.findUnique.mockResolvedValue({ ...mockUser, isActive: false });
+      prisma.user.findUnique.mockResolvedValue({
+        ...mockUser,
+        isActive: false,
+      });
 
       await expect(
         service.login({ email: 'test@example.com', password: 'TestPass1' }),
@@ -98,7 +107,10 @@ describe('AuthService', () => {
 
     it('should return generic error for locked account', async () => {
       const futureLock = new Date(Date.now() + 60 * 60 * 1000);
-      prisma.user.findUnique.mockResolvedValue({ ...mockUser, lockedUntil: futureLock });
+      prisma.user.findUnique.mockResolvedValue({
+        ...mockUser,
+        lockedUntil: futureLock,
+      });
 
       await expect(
         service.login({ email: 'test@example.com', password: 'TestPass1' }),
@@ -184,7 +196,7 @@ describe('AuthService', () => {
         email: 'new@example.com',
         password: 'TestPass1',
         fullName: 'New User',
-        role: 'ADMIN' as any,
+        role: 'ADMIN',
       });
 
       expect(capturedData.role).toBe('REQUESTER');
@@ -222,7 +234,11 @@ describe('AuthService', () => {
       prisma.user.update.mockResolvedValue(mockUser);
       prisma.refreshToken.updateMany.mockResolvedValue({ count: 1 });
 
-      const result = await service.changePassword('user-1', 'OldPass1', 'NewPass123');
+      const result = await service.changePassword(
+        'user-1',
+        'OldPass1',
+        'NewPass123',
+      );
 
       expect(result).toEqual({ message: 'Password changed successfully' });
       expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith(
@@ -233,8 +249,9 @@ describe('AuthService', () => {
 
   describe('refreshToken', () => {
     it('should rotate refresh token', async () => {
-      const { JwtService } = require('@nestjs/jwt');
-      const jwtService = new JwtService({ secret: process.env.REFRESH_TOKEN_SECRET });
+      const jwtService = new JwtService({
+        secret: process.env.REFRESH_TOKEN_SECRET,
+      });
       const refreshToken = jwtService.sign(
         { sub: 'user-1', email: 'test@example.com', role: 'REQUESTER' },
         { secret: process.env.REFRESH_TOKEN_SECRET, expiresIn: '7d' },

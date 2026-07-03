@@ -1,4 +1,10 @@
-import { IsOptional, IsString, IsInt, IsBoolean, Min, Max } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsInt,
+  Min,
+  Max,
+} from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 
 export class PaginationDto {
@@ -32,10 +38,14 @@ export class PaginationDto {
   role?: string;
 
   @IsOptional()
-  @Transform(({ value }) => value === 'true' ? true : value === 'false' ? false : undefined)
+  @Transform(({ value }) =>
+    value === 'true' ? true : value === 'false' ? false : undefined,
+  )
   isActive?: boolean;
 
   @IsOptional()
-  @Transform(({ value }) => value === 'true' ? true : value === 'false' ? false : undefined)
+  @Transform(({ value }) =>
+    value === 'true' ? true : value === 'false' ? false : undefined,
+  )
   locked?: boolean;
 }

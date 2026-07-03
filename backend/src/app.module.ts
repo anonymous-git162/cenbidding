@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { LoggerModule } from 'nestjs-pino';
 import { JwtModule } from '@nestjs/jwt';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { configuration } from './config/app.config';
@@ -26,10 +27,22 @@ import { NotificationsGateway } from './common/gateway/notifications.gateway';
 import { NotificationsService } from './modules/notifications/notifications.service';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AiModule } from './modules/ai/ai.module';
+import { EmailModule } from './modules/email/email.module';
+import { PdfModule } from './modules/pdf/pdf.module';
+import { TasksModule } from './modules/tasks/tasks.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, load: [configuration] }),
+    LoggerModule.forRoot({
+      pinoHttp: {
+        level: process.env.LOG_LEVEL || 'info',
+        redact: {
+          paths: ['req.headers.cookie', 'req.headers.authorization'],
+          censor: '***',
+        },
+      },
+    }),
     ThrottlerModule.forRoot([{ name: 'default', ttl: 60000, limit: 100 }]),
     JwtModule.registerAsync({
       useFactory: (config: ConfigService) => ({
@@ -55,6 +68,9 @@ import { AiModule } from './modules/ai/ai.module';
     NotificationsModule,
     AnalyticsModule,
     AiModule,
+    EmailModule,
+    PdfModule,
+    TasksModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
@@ -63,7 +79,10 @@ import { AiModule } from './modules/ai/ai.module';
     NotificationsGateway,
     {
       provide: 'APP_INITIALIZER',
-      useFactory: (gateway: NotificationsGateway, notifService: NotificationsService) => {
+      useFactory: (
+        gateway: NotificationsGateway,
+        notifService: NotificationsService,
+      ) => {
         notifService.setGateway(gateway);
         return () => {};
       },

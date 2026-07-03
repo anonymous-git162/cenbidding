@@ -12,19 +12,30 @@ export class AiController {
 
   @Post('write-tor')
   @ApiOperation({ summary: 'Generate Terms of Reference using AI' })
-  writeTor(@Body() body: { requestType: string; category: string; title: string; description: string }) {
+  writeTor(
+    @Body()
+    body: {
+      requestType: string;
+      category: string;
+      title: string;
+      description: string;
+    },
+  ) {
     return this.aiService.writeTor(body as any);
   }
 
   @Post('score-vendor')
   @ApiOperation({ summary: 'Score a vendor proposal using AI' })
-  scoreVendor(@Body() body: {
-    vendorName: string;
-    price: number;
-    proposalText: string;
-    allVendorPrices: number[];
-    procurementTitle: string;
-  }) {
+  scoreVendor(
+    @Body()
+    body: {
+      vendorName: string;
+      price: number;
+      proposalText: string;
+      allVendorPrices: number[];
+      procurementTitle: string;
+    },
+  ) {
     return this.aiService.scoreVendor(body);
   }
 }

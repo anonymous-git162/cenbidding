@@ -12,10 +12,26 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { Injectable } from '@nestjs/common';
 
+const WS_ALLOWED = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  process.env.FRONTEND_URL,
+].filter(Boolean) as string[];
+
+function extractCookie(client: Socket, name: string): string | undefined {
+  const cookieHeader = client.handshake.headers.cookie;
+  if (!cookieHeader) return undefined;
+  const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : undefined;
+}
+
 @WebSocketGateway({
   cors: {
-    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-      if (!origin || origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1') || origin.endsWith('.ngrok-free.app') || origin.endsWith('.ngrok-free.dev')) {
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
+      if (!origin || WS_ALLOWED.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
@@ -26,7 +42,9 @@ import { Injectable } from '@nestjs/common';
   namespace: '/ws',
 })
 @Injectable()
-export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class NotificationsGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 
@@ -39,7 +57,10 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
   handleConnection(client: Socket) {
     try {
-      const token = client.handshake.auth?.token || client.handshake.query?.token;
+      const token =
+        client.handshake.auth?.token ||
+        client.handshake.query?.token ||
+        extractCookie(client, 'accessToken');
       if (!token) {
         client.disconnect();
         return;
@@ -72,19 +93,25 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
   }
 
   @SubscribeMessage('join')
-  handleJoin(@ConnectedSocket() client: Socket, @MessageBody() data: { room: string }) {
+  handleJoin(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { room: string },
+  ) {
     client.join(data.room);
   }
 
   @SubscribeMessage('leave')
-  handleLeave(@ConnectedSocket() client: Socket, @MessageBody() data: { room: string }) {
+  handleLeave(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { room: string },
+  ) {
     client.leave(data.room);
   }
 
   sendToUser(userId: string, event: string, data: any) {
     const sockets = this.userSockets.get(userId);
     if (sockets) {
-      sockets.forEach(socketId => {
+      sockets.forEach((socketId) => {
         this.server.to(socketId).emit(event, data);
       });
     }
@@ -94,15 +121,26 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     this.server.emit(event, data);
   }
 
-  sendNotification(userId: string, notification: { id: string; title: string; message: string; link?: string }) {
+  sendNotification(
+    userId: string,
+    notification: { id: string; title: string; message: string; link?: string },
+  ) {
     this.sendToUser(userId, 'notification', notification);
   }
 
-  sendProcurementUpdate(procurementId: string, data: { status: string; title: string; updatedBy: string }) {
-    this.server.to(`procurement:${procurementId}`).emit('procurement:update', data);
+  sendProcurementUpdate(
+    procurementId: string,
+    data: { status: string; title: string; updatedBy: string },
+  ) {
+    this.server
+      .to(`procurement:${procurementId}`)
+      .emit('procurement:update', data);
   }
 
-  sendBulkNotification(userIds: string[], notification: { id: string; title: string; message: string; link?: string }) {
-    userIds.forEach(userId => this.sendNotification(userId, notification));
+  sendBulkNotification(
+    userIds: string[],
+    notification: { id: string; title: string; message: string; link?: string },
+  ) {
+    userIds.forEach((userId) => this.sendNotification(userId, notification));
   }
 }

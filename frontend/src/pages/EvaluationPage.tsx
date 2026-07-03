@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import {
   Box, Card, CardContent, Typography, Button, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, TextField, Slider, Alert, Divider, Tabs, Tab, Chip, CircularProgress,
-  Dialog, DialogTitle, DialogContent, DialogActions,
+  Dialog, DialogTitle, DialogContent, DialogActions, IconButton,
 } from '@mui/material';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -13,8 +13,9 @@ export default function EvaluationPage() {
   const [procurements, setProcurements] = useState<any[]>([]);
   const [selected, setSelected] = useState('');
   const [reviews, setReviews] = useState<any[]>([]);
-  const [scores, setScores] = useState<Record<string, { score: number; comment: string }>>({});
+  const [scores, setScores] = useState<Record<string, { score: number; comment: string; criterionScores?: { criteriaIndex: number; score: number }[] }>>({});
   const [submissions, setSubmissions] = useState<any[]>([]);
+  const [criteria, setCriteria] = useState<any[]>([]);
   const [consolidation, setConsolidation] = useState<any>(null);
   const [tab, setTab] = useState(0);
   const [error, setError] = useState('');
@@ -23,6 +24,8 @@ export default function EvaluationPage() {
   const [leadComment, setLeadComment] = useState('');
   const [aiLoading, setAiLoading] = useState<string | null>(null);
   const [aiDialog, setAiDialog] = useState<{ open: boolean; vendorId: string; vendorName: string; score: number; reasoning: string; breakdown: any }>({ open: false, vendorId: '', vendorName: '', score: 0, reasoning: '', breakdown: null });
+  const [criteriaDialog, setCriteriaDialog] = useState(false);
+  const [criteriaForm, setCriteriaForm] = useState<{ name: string; weight: number; maxScore: number }[]>([]);
 
   useEffect(() => {
     api.get('/procurements', { params: { limit: 50 } })
@@ -36,21 +39,23 @@ export default function EvaluationPage() {
   }, []);
 
   useEffect(() => {
-    if (!selected) { setReviews([]); setSubmissions([]); setConsolidation(null); return; }
+    if (!selected) { setReviews([]); setSubmissions([]); setConsolidation(null); setCriteria([]); return; }
     setLoading(true);
     Promise.all([
       api.get(`/evaluation/reviews/${selected}`),
       api.get(`/rfq-submissions/procurement/${selected}`),
       api.get(`/evaluation/consolidation/${selected}`).catch(() => ({ data: null })),
-    ]).then(([reviewsRes, subsRes, consRes]) => {
+      api.get(`/evaluation/${selected}/criteria`),
+    ]).then(([reviewsRes, subsRes, consRes, criteriaRes]) => {
       const existingReviews = reviewsRes.data || [];
+      const c = criteriaRes.data || [];
       setReviews(existingReviews);
       setSubmissions(subsRes.data || []);
       setConsolidation(consRes.data);
-      // Pre-populate scores from existing reviews
-      const seeded: Record<string, { score: number; comment: string }> = {};
+      setCriteria(c);
+      const seeded: Record<string, { score: number; comment: string; criterionScores?: { criteriaIndex: number; score: number }[] }> = {};
       for (const r of existingReviews) {
-        seeded[r.vendorId] = { score: r.score, comment: r.comment || '' };
+        seeded[r.vendorId] = { score: r.score, comment: r.comment || '', criterionScores: r.criterionScores || undefined };
       }
       setScores(prev => ({ ...prev, ...seeded }));
     }).catch(err => setError(err.response?.data?.message || 'Failed'))
@@ -61,9 +66,42 @@ export default function EvaluationPage() {
     const s = scores[vendorId];
     if (!s) return;
     try {
-      await api.post('/evaluation/reviews', { procurementId: selected, vendorId, score: s.score, comment: s.comment });
+      await api.post('/evaluation/reviews', {
+        procurementId: selected, vendorId, score: s.score, comment: s.comment,
+        criterionScores: s.criterionScores || undefined,
+      });
       const res = await api.get(`/evaluation/reviews/${selected}`);
       setReviews(res.data || []);
+    } catch (err: any) { setError(err.response?.data?.message || 'Failed'); }
+  };
+
+  const computeWeightedScore = (criterionScores: { criteriaIndex: number; score: number }[]) => {
+    if (!criteria.length || !criterionScores.length) return -1;
+    const totalWeight = criteria.reduce((sum: number, c: any) => sum + (c.weight || 0), 0);
+    if (totalWeight === 0) return -1;
+    const weighted = criterionScores.reduce((sum: number, cs: any) => {
+      const cr = criteria[cs.criteriaIndex];
+      if (!cr) return sum;
+      return sum + (cs.score / (cr.maxScore || 100)) * (cr.weight || 0);
+    }, 0);
+    return Math.round((weighted / totalWeight) * 100);
+  };
+
+  const openCriteriaDialog = () => {
+    setCriteriaForm(criteria.length ? criteria : [
+      { name: 'Price', weight: 40, maxScore: 100 },
+      { name: 'Quality', weight: 30, maxScore: 100 },
+      { name: 'Delivery', weight: 20, maxScore: 100 },
+      { name: 'Compliance', weight: 10, maxScore: 100 },
+    ]);
+    setCriteriaDialog(true);
+  };
+
+  const saveCriteria = async () => {
+    try {
+      await api.put(`/evaluation/${selected}/criteria`, { criteria: criteriaForm });
+      setCriteria(criteriaForm);
+      setCriteriaDialog(false);
     } catch (err: any) { setError(err.response?.data?.message || 'Failed'); }
   };
 
@@ -138,7 +176,7 @@ export default function EvaluationPage() {
       <Typography variant="h5" fontWeight={700} sx={{ mb: 3 }}>Evaluation Queue</Typography>
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 
-      <Card sx={{ mb: 3 }}>
+      <Card elevation={0} sx={{ mb: 3, border: '1px solid', borderColor: 'divider' }}>
         <CardContent>
           <TextField select fullWidth size="small" label="Select Procurement" value={selected}
             onChange={(e) => { setSelected(e.target.value); setTab(0); }}
@@ -156,6 +194,18 @@ export default function EvaluationPage() {
         </CardContent>
       </Card>
 
+      {selected && (
+        <Box sx={{ mb: 2, display: 'flex', gap: 1, alignItems: 'center' }}>
+          <Typography variant="body2" color="text.secondary">
+            {criteria.length ? `${criteria.length} criteria configured` : 'No evaluation criteria set'}
+          </Typography>
+          {(user?.role === 'PROCUREMENT' || user?.role === 'LEAD_EVALUATOR' || user?.role === 'ADMIN') && (
+            <Button size="small" variant="outlined" startIcon={<Icon name="Edit" />} onClick={openCriteriaDialog}>
+              {criteria.length ? 'Edit Criteria' : 'Configure Criteria'}
+            </Button>
+          )}
+        </Box>
+      )}
       {selected && (
         <Card>
           <CardContent>
@@ -184,43 +234,74 @@ export default function EvaluationPage() {
                             <TableRow>
                               <TableCell>Vendor</TableCell>
                               <TableCell>Price</TableCell>
-                              <TableCell>Your Score (0-100)</TableCell>
+                              <TableCell>{criteria.length ? 'Per-Criterion Scores' : 'Your Score (0-100)'}</TableCell>
+                              <TableCell>Weighted</TableCell>
                               <TableCell>Comment</TableCell>
                               <TableCell>Action</TableCell>
                             </TableRow>
                           </TableHead>
                           <TableBody>
-                            {submissions.map((sub) => (
-                              <TableRow key={sub.id}>
-                                <TableCell>{sub.vendor?.companyName || 'Unknown'}</TableCell>
-                                <TableCell>${Number(sub.price).toLocaleString()}</TableCell>
-                                <TableCell>
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <Slider value={scores[sub.vendorId]?.score || 50} min={0} max={100} step={5}
-                                      onChange={(_, v) => setScores({ ...scores, [sub.vendorId]: { score: v as number, comment: scores[sub.vendorId]?.comment || '' } })}
-                                      sx={{ width: 150 }} />
-                                    <Typography variant="body2" sx={{ minWidth: 30 }}>{scores[sub.vendorId]?.score || 50}</Typography>
-                                  </Box>
-                                </TableCell>
-                                <TableCell>
-                                  <TextField size="small" placeholder="Add comment..."
-                                    value={scores[sub.vendorId]?.comment || ''}
-                                    onChange={(e) => setScores({ ...scores, [sub.vendorId]: { score: scores[sub.vendorId]?.score || 50, comment: e.target.value } })} />
-                                </TableCell>
-                                <TableCell>
-                                  <Box sx={{ display: 'flex', gap: 1 }}>
-                                    <Button size="small" variant="outlined" color="secondary"
-                                      startIcon={aiLoading === sub.vendorId ? <CircularProgress size={14} /> : <Icon name="Assessment" />}
-                                      onClick={() => aiScore(sub.vendorId, sub.vendor?.companyName || 'Unknown', Number(sub.price))}
-                                      disabled={aiLoading !== null}>
-                                      {aiLoading === sub.vendorId ? 'Scoring...' : 'AI Score'}
-                                    </Button>
-                                    <Button size="small" variant="contained" startIcon={<Icon name="Send" />}
-                                      onClick={() => submitReview(sub.vendorId)}>Submit</Button>
-                                  </Box>
-                                </TableCell>
-                              </TableRow>
-                            ))}
+                            {submissions.map((sub) => {
+                              const s = scores[sub.vendorId] || { score: 50, comment: '', criterionScores: criteria.map((_, i) => ({ criteriaIndex: i, score: 50 })) };
+                              if (!s.criterionScores && criteria.length) s.criterionScores = criteria.map((_, i) => ({ criteriaIndex: i, score: 50 }));
+                              const weighted = s.criterionScores ? computeWeightedScore(s.criterionScores) : s.score;
+                              return (
+                                <TableRow key={sub.id}>
+                                  <TableCell>{sub.vendor?.companyName || 'Unknown'}</TableCell>
+                                  <TableCell>${Number(sub.price).toLocaleString()}</TableCell>
+                                  <TableCell>
+                                    {criteria.length > 0 ? (
+                                      <Box sx={{ minWidth: 250 }}>
+                                        {criteria.map((cr: any, ci: number) => {
+                                          const cs = s.criterionScores?.[ci];
+                                          return (
+                                            <Box key={ci} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                              <Typography variant="caption" sx={{ minWidth: 80, fontSize: 11 }}>{cr.name}</Typography>
+                                              <Slider value={cs?.score || 50} min={0} max={cr.maxScore || 100} step={5}
+                                                onChange={(_, v) => {
+                                                  const css = [...(s.criterionScores || [])];
+                                                  css[ci] = { criteriaIndex: ci, score: v as number };
+                                                  const newWeighted = computeWeightedScore(css);
+                                                  setScores({ ...scores, [sub.vendorId]: { ...s, criterionScores: css, score: newWeighted } });
+                                                }}
+                                                sx={{ width: 120 }} />
+                                              <Typography variant="caption" sx={{ minWidth: 20 }}>{cs?.score || 50}</Typography>
+                                            </Box>
+                                          );
+                                        })}
+                                      </Box>
+                                    ) : (
+                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <Slider value={s.score} min={0} max={100} step={5}
+                                          onChange={(_, v) => setScores({ ...scores, [sub.vendorId]: { ...s, score: v as number } })}
+                                          sx={{ width: 150 }} />
+                                        <Typography variant="body2" sx={{ minWidth: 30 }}>{s.score}</Typography>
+                                      </Box>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Chip label={weighted} size="small" color={weighted >= 80 ? 'success' : weighted >= 60 ? 'warning' : 'error'} />
+                                  </TableCell>
+                                  <TableCell>
+                                    <TextField size="small" placeholder="Add comment..."
+                                      value={s.comment || ''}
+                                      onChange={(e) => setScores({ ...scores, [sub.vendorId]: { ...s, comment: e.target.value } })} />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Box sx={{ display: 'flex', gap: 1 }}>
+                                      <Button size="small" variant="outlined" color="secondary"
+                                        startIcon={aiLoading === sub.vendorId ? <CircularProgress size={14} /> : <Icon name="Assessment" />}
+                                        onClick={() => aiScore(sub.vendorId, sub.vendor?.companyName || 'Unknown', Number(sub.price))}
+                                        disabled={aiLoading !== null}>
+                                        {aiLoading === sub.vendorId ? 'Scoring...' : 'AI Score'}
+                                      </Button>
+                                      <Button size="small" variant="contained" startIcon={<Icon name="Send" />}
+                                        onClick={() => submitReview(sub.vendorId)}>Submit</Button>
+                                    </Box>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
                           </TableBody>
                         </Table>
                       </TableContainer>
@@ -289,6 +370,34 @@ export default function EvaluationPage() {
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={criteriaDialog} onClose={() => setCriteriaDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Evaluation Criteria</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Define weighted criteria for scoring. Each evaluator will score each criterion per vendor.
+          </Typography>
+          {criteriaForm.map((cr, i) => (
+            <Box key={i} sx={{ display: 'flex', gap: 1, mb: 1.5, alignItems: 'center' }}>
+              <TextField size="small" label="Name" value={cr.name} onChange={(e) => {
+                const f = [...criteriaForm]; f[i] = { ...f[i], name: e.target.value }; setCriteriaForm(f);
+              }} sx={{ flex: 1 }} />
+              <TextField size="small" label="Weight" type="number" value={cr.weight} onChange={(e) => {
+                const f = [...criteriaForm]; f[i] = { ...f[i], weight: Number(e.target.value) }; setCriteriaForm(f);
+              }} sx={{ width: 90 }} inputProps={{ min: 0, max: 100 }} />
+              <TextField size="small" label="Max" type="number" value={cr.maxScore} onChange={(e) => {
+                const f = [...criteriaForm]; f[i] = { ...f[i], maxScore: Number(e.target.value) }; setCriteriaForm(f);
+              }} sx={{ width: 80 }} inputProps={{ min: 1 }} />
+              <IconButton size="small" onClick={() => setCriteriaForm(criteriaForm.filter((_, j) => j !== i))}><Icon name="Delete" /></IconButton>
+            </Box>
+          ))}
+          <Button size="small" startIcon={<Icon name="Add" />} onClick={() => setCriteriaForm([...criteriaForm, { name: '', weight: 10, maxScore: 100 }])}>Add Criterion</Button>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCriteriaDialog(false)}>Cancel</Button>
+          <Button variant="contained" onClick={saveCriteria} disabled={criteriaForm.some(c => !c.name || c.weight <= 0)}>Save</Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={aiDialog.open} onClose={() => setAiDialog({ ...aiDialog, open: false })} maxWidth="sm" fullWidth>
         <DialogTitle>AI Scoring Suggestion</DialogTitle>

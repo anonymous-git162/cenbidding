@@ -1,18 +1,32 @@
-import { Injectable, Optional } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { NotificationsGateway } from '../../common/gateway/notifications.gateway';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class NotificationsService {
   private gateway: NotificationsGateway | null = null;
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private emailService: EmailService,
+  ) {}
 
   setGateway(gateway: NotificationsGateway) {
     this.gateway = gateway;
   }
 
-  async create(userId: string, data: { title: string; message: string; type?: string; entityType?: string; entityId?: string; link?: string }) {
+  async create(
+    userId: string,
+    data: {
+      title: string;
+      message: string;
+      type?: string;
+      entityType?: string;
+      entityId?: string;
+      link?: string;
+    },
+  ) {
     const notification = await this.prisma.notification.create({
       data: {
         userId,
@@ -33,12 +47,35 @@ export class NotificationsService {
       link: notification.link || undefined,
     });
 
+    // Send email notification
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true },
+    });
+    if (user?.email) {
+      await this.emailService.send(
+        user.email,
+        notification.title,
+        `${notification.message}\n\n${data.link || ''}`,
+      );
+    }
+
     return notification;
   }
 
-  async createForUsers(userIds: string[], data: { title: string; message: string; type?: string; entityType?: string; entityId?: string; link?: string }) {
+  async createForUsers(
+    userIds: string[],
+    data: {
+      title: string;
+      message: string;
+      type?: string;
+      entityType?: string;
+      entityId?: string;
+      link?: string;
+    },
+  ) {
     const result = await this.prisma.notification.createMany({
-      data: userIds.map(userId => ({
+      data: userIds.map((userId) => ({
         userId,
         title: data.title,
         message: data.message,
@@ -56,6 +93,21 @@ export class NotificationsService {
       message: data.message,
       link: data.link,
     });
+
+    // Send email notifications
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { email: true },
+    });
+    await this.emailService.sendBulk(
+      users
+        .filter((u) => u.email)
+        .map((u) => ({
+          email: u.email,
+          subject: data.title,
+          text: `${data.message}\n\n${data.link || ''}`,
+        })),
+    );
 
     return result;
   }

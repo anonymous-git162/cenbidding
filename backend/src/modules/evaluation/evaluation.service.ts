@@ -1,12 +1,64 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 
 @Injectable()
 export class EvaluationService {
   constructor(private prisma: PrismaService) {}
 
-  async assignEvaluators(procurementId: string, evaluatorIds: string[], leadEvaluatorId: string) {
-    await this.prisma.evaluatorAssignment.deleteMany({ where: { procurementId } });
+  private computeWeightedScore(
+    criteria: any[],
+    criterionScores: { criteriaIndex: number; score: number }[],
+  ): number {
+    if (!criteria?.length || !criterionScores?.length) return -1;
+    const totalWeight = criteria.reduce(
+      (sum: number, c: any) => sum + (c.weight || 0),
+      0,
+    );
+    if (totalWeight === 0) return -1;
+    const weighted = criterionScores.reduce((sum: number, cs: any) => {
+      const criterion = criteria[cs.criteriaIndex];
+      if (!criterion) return sum;
+      return (
+        sum + (cs.score / (criterion.maxScore || 100)) * (criterion.weight || 0)
+      );
+    }, 0);
+    return Math.round((weighted / totalWeight) * 100);
+  }
+
+  async setCriteria(
+    procurementId: string,
+    criteria: { name: string; weight: number; maxScore?: number }[],
+  ) {
+    const procurement = await this.prisma.procurement.findUnique({
+      where: { id: procurementId },
+    });
+    if (!procurement) throw new NotFoundException('Procurement not found');
+    return this.prisma.procurement.update({
+      where: { id: procurementId },
+      data: { evaluationCriteria: criteria },
+    });
+  }
+
+  async getCriteria(procurementId: string) {
+    const procurement = await this.prisma.procurement.findUnique({
+      where: { id: procurementId },
+      select: { evaluationCriteria: true },
+    });
+    return procurement?.evaluationCriteria || [];
+  }
+
+  async assignEvaluators(
+    procurementId: string,
+    evaluatorIds: string[],
+    leadEvaluatorId: string,
+  ) {
+    await this.prisma.evaluatorAssignment.deleteMany({
+      where: { procurementId },
+    });
 
     const assignments = await Promise.all(
       evaluatorIds.map((evaluatorId) =>
@@ -33,32 +85,64 @@ export class EvaluationService {
       where: { evaluatorId: evaluatorUserId },
       include: {
         procurement: {
-          select: { id: true, requestNo: true, title: true, status: true, category: true },
+          select: {
+            id: true,
+            requestNo: true,
+            title: true,
+            status: true,
+            category: true,
+          },
         },
       },
       orderBy: { assignedAt: 'desc' },
     });
   }
 
-  async submitReview(evaluatorId: string, procurementId: string, vendorId: string, score: number, comment?: string) {
+  async submitReview(
+    evaluatorId: string,
+    procurementId: string,
+    vendorId: string,
+    score: number,
+    comment?: string,
+    criterionScores?: { criteriaIndex: number; score: number }[],
+  ) {
     const assignment = await this.prisma.evaluatorAssignment.findFirst({
       where: { procurementId, evaluatorId },
     });
-    if (!assignment) throw new BadRequestException('Evaluator not assigned to this procurement');
+    if (!assignment)
+      throw new BadRequestException(
+        'Evaluator not assigned to this procurement',
+      );
+
+    let finalScore = score;
+    if (criterionScores?.length) {
+      const procurement = await this.prisma.procurement.findUnique({
+        where: { id: procurementId },
+        select: { evaluationCriteria: true },
+      });
+      const weighted = this.computeWeightedScore(
+        procurement?.evaluationCriteria as any[],
+        criterionScores,
+      );
+      if (weighted >= 0) finalScore = weighted;
+    }
 
     const existing = await this.prisma.evaluatorReview.findFirst({
       where: { evaluatorId, procurementId, vendorId },
     });
 
+    const data: any = { score: finalScore, comment, submittedAt: new Date() };
+    if (criterionScores) data.criterionScores = criterionScores;
+
     if (existing) {
       return this.prisma.evaluatorReview.update({
         where: { id: existing.id },
-        data: { score, comment, submittedAt: new Date() },
+        data,
       });
     }
 
     return this.prisma.evaluatorReview.create({
-      data: { evaluatorId, procurementId, vendorId, score, comment },
+      data: { evaluatorId, procurementId, vendorId, ...data },
     });
   }
 
@@ -83,19 +167,31 @@ export class EvaluationService {
       vendorScores[review.vendorId].push(review.score);
     }
 
-    const result: Record<string, { avgScore: number; voteCount: number; variance: number }> = {};
+    const result: Record<
+      string,
+      { avgScore: number; voteCount: number; variance: number }
+    > = {};
     for (const [vendorId, scores] of Object.entries(vendorScores)) {
       const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-      const variance = scores.reduce((sum, s) => sum + Math.pow(s - avg, 2), 0) / scores.length;
+      const variance =
+        scores.reduce((sum, s) => sum + Math.pow(s - avg, 2), 0) /
+        scores.length;
       result[vendorId] = { avgScore: avg, voteCount: scores.length, variance };
     }
 
     return result;
   }
 
-  async consolidate(procurementId: string, leadEvaluatorId: string, recommendation: string, leadCommentary: string) {
+  async consolidate(
+    procurementId: string,
+    leadEvaluatorId: string,
+    recommendation: string,
+    leadCommentary: string,
+  ) {
     const scores = await this.calculateScores(procurementId);
-    const avgScore = Object.values(scores).reduce((sum, s) => sum + s.avgScore, 0) / Object.values(scores).length || 0;
+    const avgScore =
+      Object.values(scores).reduce((sum, s) => sum + s.avgScore, 0) /
+        Object.values(scores).length || 0;
 
     return this.prisma.evaluationConsolidation.upsert({
       where: { procurementId },

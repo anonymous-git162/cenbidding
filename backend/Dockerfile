@@ -1,21 +1,20 @@
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS build
 WORKDIR /app
 COPY package*.json ./
-COPY prisma ./prisma/
 RUN npm ci
-COPY . .
+COPY prisma ./prisma
 RUN npx prisma generate
+COPY . .
 RUN npm run build
 
-FROM node:20-alpine
-RUN addgroup -g 1001 -S nodejs && adduser -S nestjs -u 1001
+FROM node:22-alpine
 WORKDIR /app
-COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
-COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=nestjs:nodejs /app/prisma ./prisma
-COPY --from=builder --chown=nestjs:nodejs /app/package.json ./
-USER nestjs
+COPY package*.json ./
+RUN npm ci --omit=dev
+COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=build /app/dist ./dist
+COPY prisma ./prisma
+HEALTHCHECK --interval=15s --timeout=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health/live || exit 1
 EXPOSE 3000
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/api/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1) })"
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main.js"]
+  CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main"]

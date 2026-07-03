@@ -1,4 +1,5 @@
 import { Icon } from '../components/Icon';
+import { sanitizeCSVCell, downloadCSV } from '../utils/csv';
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -71,7 +72,8 @@ export default function ProcurementDetailPage() {
     setActionLoading(true);
     setError('');
     try {
-      if (action === 'submit') await api.post(`/procurements/${id}/submit`);
+      if (action === 'resubmitForApproval') await api.post(`/procurements/${id}/approval/resubmit`);
+      else if (action === 'submit') await api.post(`/procurements/${id}/submit`);
       else if (action === 'startReview') await api.post(`/procurements/${id}/review/start`);
       else if (action === 'approve') await api.post(`/procurements/${id}/review/approve`, { comment });
       else if (action === 'return') await api.post(`/procurements/${id}/review/return`, { reason: comment });
@@ -82,6 +84,7 @@ export default function ProcurementDetailPage() {
       else if (action === 'completeEbidding') await api.post(`/procurements/${id}/ebidding/complete`);
       else if (action === 'completeEvaluation') await api.post(`/procurements/${id}/evaluation/complete`);
       else if (action === 'announceAward') await api.post(`/procurements/${id}/award/announce`);
+      else if (action === 'sendContract') await api.post(`/procurements/${id}/contract/send`);
       else if (action === 'completeProcurement') await api.post(`/procurements/${id}/award/complete`);
       else if (action === 'cancel') await api.post(`/procurements/${id}/cancel`, { reason: comment });
       setDialog(null);
@@ -146,6 +149,9 @@ export default function ProcurementDetailPage() {
           {role === 'PROCUREMENT' && status === 'APPROVED' && (
             <Button variant="contained" startIcon={<Icon name="Publish" />} onClick={() => setDialog({ type: 'publish', title: 'Publish Request' })}>Publish</Button>
           )}
+          {role === 'PROCUREMENT' && status === 'RETURNED_FROM_APPROVAL' && (
+            <Button variant="contained" color="warning" startIcon={<Icon name="Send" />} onClick={() => handleAction('resubmitForApproval')}>Resubmit for Approval</Button>
+          )}
           {role === 'PROCUREMENT' && (status === 'RFP_PUBLISHED' || status === 'RFQ_OPEN') && (
             <Button variant="contained" color="info" startIcon={<Icon name="Send" />} onClick={() => handleAction('vendorResponse')}>Complete Vendor Response</Button>
           )}
@@ -154,6 +160,9 @@ export default function ProcurementDetailPage() {
           )}
           {role === 'PROCUREMENT' && status === 'EBIDDING_PREP' && (
             <Button variant="contained" color="warning" startIcon={<Icon name="Gavel" />} onClick={() => handleAction('completeEbidding')}>Complete E-Bidding</Button>
+          )}
+          {role === 'PROCUREMENT' && status === 'EBIDDING_CLOSED' && (
+            <Button variant="contained" color="info" startIcon={<Icon name="CheckCircle" />} onClick={() => handleAction('completeEvaluation')}>Complete Evaluation</Button>
           )}
           {role === 'PROCUREMENT' && status === 'VENDOR_RESPONSE_IN_PROGRESS' && (
             <Button variant="outlined" color="info" startIcon={<Icon name="CheckCircle" />} onClick={() => handleAction('completeEbidding')} sx={{ ml: 1 }}>Skip to Evaluation</Button>
@@ -172,13 +181,16 @@ export default function ProcurementDetailPage() {
             <Button variant="contained" color="success" startIcon={<Icon name="Publish" />} onClick={() => handleAction('announceAward')}>Announce Award</Button>
           )}
           {role === 'PROCUREMENT' && status === 'AWARD_ANNOUNCED' && (
+            <Button variant="contained" color="warning" startIcon={<Icon name="Description" />} onClick={() => handleAction('sendContract')}>Send Contract</Button>
+          )}
+          {(role === 'PROCUREMENT' || role === 'APPROVER' || role === 'ADMIN') && status === 'AWARD_ANNOUNCED' && (
             <Button variant="contained" color="success" startIcon={<Icon name="CheckCircle" />} onClick={() => handleAction('completeProcurement')}>Complete</Button>
           )}
         </Box>
       </Box>
 
       <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', mb: 3, overflow: 'hidden' }}>
-        <Box sx={{ px: 3, py: 1.5, bgcolor: 'action.hover', borderBottom: '1px solid #E5E7EB' }}>
+        <Box sx={{ px: 3, py: 1.5, bgcolor: 'action.hover', borderBottom: '1px solid', borderColor: 'divider' }}>
           <Typography variant="subtitle2" fontWeight={600} color="text.secondary">Workflow Progress</Typography>
         </Box>
         <CardContent sx={{ py: 2, px: 2 }}>
@@ -215,7 +227,7 @@ export default function ProcurementDetailPage() {
       <Grid container spacing={3}>
         <Grid item xs={12} md={8}>
           <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', mb: 3 }}>
-            <Box sx={{ borderBottom: '1px solid #E5E7EB' }}>
+            <Box sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
               <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ px: 2, '& .MuiTab-root': { textTransform: 'none', fontWeight: 500 } }}>
                 <Tab label="Overview" />
                 <Tab label="Vendors" />
@@ -260,6 +272,18 @@ export default function ProcurementDetailPage() {
                       </Box>
                     </Box>
                   )}
+                  <Box sx={{ mb: 2, display: 'flex', gap: 1 }}>
+                    <Button size="small" variant="outlined" startIcon={<Icon name="Description" />} href={`/api/pdf/tor/${id}`} target="_blank">Export TOR (PDF)</Button>
+                    {(status === 'EVALUATION' || status === 'PENDING_APPROVAL' || status === 'AWARD_APPROVED' || status === 'AWARD_ANNOUNCED' || status === 'COMPLETED') && (
+                      <Button size="small" variant="outlined" startIcon={<Icon name="Assessment" />} href={`/api/pdf/evaluation/${id}`} target="_blank">Export Evaluation (PDF)</Button>
+                    )}
+                    {(status === 'AWARD_ANNOUNCED' || status === 'COMPLETED') && (
+                      <Button size="small" variant="outlined" startIcon={<Icon name="Publish" />} href={`/api/pdf/result/${id}`} target="_blank">Export Result (PDF)</Button>
+                    )}
+                    {(status === 'AWARD_ANNOUNCED' || status === 'COMPLETED') && (
+                      <Button size="small" variant="outlined" startIcon={<Icon name="Description" />} href={`/api/pdf/contract/${id}`} target="_blank">Contract (PDF)</Button>
+                    )}
+                  </Box>
                   <Divider sx={{ my: 2 }} />
                   <Grid container spacing={2}>
                     {[
@@ -339,12 +363,8 @@ export default function ProcurementDetailPage() {
                             new Date(sub.submittedAt || sub.createdAt).toLocaleDateString(),
                           ]);
                         });
-                        const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
-                        const blob = new Blob([csv], { type: 'text/csv' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url; a.download = `submissions-${procurement.requestNo}.csv`; a.click();
-                        URL.revokeObjectURL(url);
+                        const csv = rows.map(r => r.map(c => `"${sanitizeCSVCell(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+                        downloadCSV(csv, `submissions-${procurement.requestNo}.csv`);
                       }}>
                         Export CSV
                       </Button>
@@ -398,12 +418,8 @@ export default function ProcurementDetailPage() {
                             new Date(e.submittedAt).toLocaleString(),
                           ]);
                         });
-                        const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
-                        const blob = new Blob([csv], { type: 'text/csv' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url; a.download = `evaluations-${procurement.requestNo}.csv`; a.click();
-                        URL.revokeObjectURL(url);
+                        const csv = rows.map(r => r.map(c => `"${sanitizeCSVCell(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+                        downloadCSV(csv, `evaluations-${procurement.requestNo}.csv`);
                       }}>
                         Export CSV
                       </Button>
@@ -463,7 +479,7 @@ export default function ProcurementDetailPage() {
 
         <Grid item xs={12} md={4}>
           <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', mb: 3 }}>
-            <Box sx={{ px: 3, py: 2, borderBottom: '1px solid #E5E7EB' }}>
+            <Box sx={{ px: 3, py: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
               <Typography variant="subtitle2" fontWeight={600}>Timeline</Typography>
               <Typography variant="caption" color="text.secondary">{timeline.length} event{timeline.length !== 1 ? 's' : ''}</Typography>
             </Box>

@@ -1,3 +1,4 @@
+import { sanitizeCSVCell, downloadCSV } from '../utils/csv';
 import { Icon } from '../components/Icon';
 import { useEffect, useState } from 'react';
 import {
@@ -8,6 +9,8 @@ import {
   PieChart, Pie, Cell, AreaChart, Area,
 } from 'recharts';
 import api from '../services/api';
+import { useTheme } from '@mui/material/styles';
+import KpiCard from '../components/KpiCard';
 
 interface Stats {
   total: number;
@@ -30,6 +33,7 @@ const STATUS_COLORS: Record<string, string> = {
 const TYPE_COLORS: Record<string, string> = { RFP: '#2563EB', RFQ: '#F59E0B', RFI: '#6B7280' };
 
 export default function ReportingPage() {
+  const theme = useTheme();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -61,12 +65,8 @@ export default function ReportingPage() {
     stats.byCategory.forEach(c => rows.push([c.category, String(c.count)]));
     rows.push([], ['Month', 'Count', 'Budget']);
     stats.byMonth.forEach(m => rows.push([m.month, String(m.count), String(m.budget)]));
-    const csv = rows.map(r => r.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'procurement-report.csv'; a.click();
-    URL.revokeObjectURL(url);
+    const csv = rows.map(r => r.map(c => sanitizeCSVCell(String(c))).join(',')).join('\n');
+    downloadCSV(csv, 'procurement-report.csv');
   };
 
   if (loading) {
@@ -79,7 +79,7 @@ export default function ReportingPage() {
 
   const statusData = stats.byStatus.map(s => ({ name: s.status.replace(/_/g, ' '), value: s.count, fill: STATUS_COLORS[s.status] || '#9CA3AF' }));
   const typeData = stats.byType.map(t => ({ name: t.type, value: t.count, fill: TYPE_COLORS[t.type] || '#9CA3AF' }));
-  const categoryData = stats.byCategory.sort((a, b) => b.count - a.count).slice(0, 8);
+  const categoryData = [...stats.byCategory].sort((a, b) => b.count - a.count).slice(0, 8);
   const monthData = stats.byMonth.map(m => ({ month: m.month, procurements: m.count, budget: m.budget / 1000 }));
 
   return (
@@ -100,19 +100,7 @@ export default function ReportingPage() {
     { title: 'Categories', value: stats.byCategory.length, icon: 'Category', color: 'info.main', bg: 'info.50' },
         ].map((kpi) => (
           <Grid item xs={6} sm={3} key={kpi.title}>
-            <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
-              <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <Box sx={{ width: 40, height: 40, borderRadius: 1.5, bgcolor: kpi.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Icon name={kpi.icon} />
-                  </Box>
-                  <Box>
-                    <Typography variant="h5" fontWeight={700} color={kpi.color}>{kpi.value}</Typography>
-                    <Typography variant="caption" color="text.secondary">{kpi.title}</Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
+            <KpiCard title={kpi.title} value={kpi.value} icon={kpi.icon} color={kpi.color} bg={kpi.bg} />
           </Grid>
         ))}
       </Grid>
@@ -130,7 +118,7 @@ export default function ReportingPage() {
                       <stop offset="95%" stopColor="#2563EB" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
                   <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} />
                   <Tooltip />
@@ -146,7 +134,7 @@ export default function ReportingPage() {
               <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>Budget by Month (K)</Typography>
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={monthData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
                   <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} />
                   <Tooltip formatter={(value: number) => `$${value}K`} />
@@ -199,8 +187,8 @@ export default function ReportingPage() {
                     <Typography variant="body2">{cat.category}</Typography>
                     <Typography variant="body2" fontWeight={600}>{cat.count}</Typography>
                   </Box>
-                  <Box sx={{ height: 6, bgcolor: 'grey.100', borderRadius: 3 }}>
-                    <Box sx={{ height: '100%', width: `${(cat.count / Math.max(...categoryData.map(c => c.count))) * 100}%`, bgcolor: 'info.main', borderRadius: 3, transition: 'width 0.5s' }} />
+                   <Box sx={{ height: 6, bgcolor: 'action.hover', borderRadius: 3 }}>
+                     <Box sx={{ height: '100%', width: categoryData.length > 0 ? `${(cat.count / Math.max(...categoryData.map(c => c.count))) * 100}%` : '0%', bgcolor: 'info.main', borderRadius: 3, transition: 'width 0.5s' }} />
                   </Box>
                 </Box>
               ))}
@@ -216,7 +204,7 @@ export default function ReportingPage() {
             <Typography variant="body2" color="text.secondary">No recent activity</Typography>
           )}
           {stats.recentActivity.slice(0, 10).map((item, idx) => (
-            <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 1, borderBottom: idx < 9 ? '1px solid #F3F4F6' : 'none' }}>
+            <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 1, borderBottom: idx < 9 ? '1px solid' : 'none', borderColor: 'divider' }}>
               <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: 'info.50', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Icon name="Timeline" sx={{ fontSize: 16, color: 'info.main' }} />
               </Box>
