@@ -23,7 +23,21 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   // Security headers
-  app.use(helmet());
+  app.use(helmet({
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        defaultSrc: [`'self'`],
+        scriptSrc: [`'self'`, `'unsafe-inline'`, `'unsafe-eval'`],
+        styleSrc: [`'self'`, `'unsafe-inline'`],
+        imgSrc: [`'self'`, 'data:', 'validator.swagger.io'],
+        connectSrc: [`'self'`],
+        fontSrc: [`'self'`],
+        objectSrc: [`'none'`],
+        frameSrc: [`'none'`],
+      },
+    },
+  }));
 
   // Cookie parser for httpOnly JWT cookies
   app.use(cookieParser());
