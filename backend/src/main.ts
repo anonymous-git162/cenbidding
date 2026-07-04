@@ -23,7 +23,13 @@ async function bootstrap() {
 
   // ponytail: run schema push at startup for reliability; switch to prisma migrate deploy for strict migration tracking
   console.log('>>> Running prisma db push...');
-  execSync('npx prisma db push 2>&1', { stdio: 'inherit' });
+  try {
+    const push = execSync('./node_modules/.bin/prisma db push 2>&1', { encoding: 'utf-8', maxBuffer: 1024 * 1024 });
+    console.log('>>>', push.trim().split('\n').slice(-3).join('\n'));
+  } catch (e: any) {
+    console.error('>>> prisma db push FAILED:', e.stderr?.toString() || e.message);
+    throw e;
+  }
   console.log('>>> Running seed...');
   execSync('node prisma/seed.prod.js 2>&1', { stdio: 'inherit' });
 
