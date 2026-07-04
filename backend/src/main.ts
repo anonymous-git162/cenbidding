@@ -5,7 +5,6 @@ import { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import * as crypto from 'crypto';
-import { execSync } from 'child_process';
 import { AppModule } from './app.module';
 
 function requireEnv(name: string): string {
@@ -18,20 +17,9 @@ function requireEnv(name: string): string {
 }
 
 async function bootstrap() {
+  process.stderr.write('BOOT\n');
   requireEnv('JWT_SECRET');
   requireEnv('REFRESH_TOKEN_SECRET');
-
-  // ponytail: run schema push at startup for reliability; switch to prisma migrate deploy for strict migration tracking
-  try {
-    process.stderr.write('>>> PUSH START\n');
-    const push = execSync('npx --yes prisma db push', { encoding: 'utf-8', maxBuffer: 1024 * 1024 });
-    process.stderr.write('>>> PUSH OK: ' + push.trim().split('\n').slice(-3).join(',') + '\n');
-    process.stderr.write('>>> SEED START\n');
-    execSync('node prisma/seed.prod.js', { stdio: 'inherit' });
-    process.stderr.write('>>> SEED OK\n');
-  } catch (error) {
-    process.stderr.write('>>> DB INIT FAILED: ' + (error?.toString() || 'unknown') + '\n');
-  }
 
   const app = await NestFactory.create(AppModule);
 
