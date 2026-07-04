@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { PrismaService } from '../../database/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
 
 @Injectable()
@@ -16,6 +17,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private auditService: AuditService,
   ) {}
 
   async login(dto: LoginDto) {
@@ -24,14 +26,29 @@ export class AuthService {
     });
 
     if (!user) {
+      await this.auditService.log({
+        module: 'auth', entityType: 'login', entityId: dto.email,
+        action: 'LOGIN_FAILED', actorId: undefined,
+        afterData: { reason: 'user_not_found' },
+      });
       throw new UnauthorizedException('Invalid email or password');
     }
 
     if (!user.isActive) {
+      await this.auditService.log({
+        module: 'auth', entityType: 'user', entityId: user.id,
+        action: 'LOGIN_FAILED', actorId: user.id, actorRole: user.role,
+        afterData: { reason: 'account_inactive' },
+      });
       throw new UnauthorizedException('Invalid email or password');
     }
 
     if (user.lockedUntil && new Date() < user.lockedUntil) {
+      await this.auditService.log({
+        module: 'auth', entityType: 'user', entityId: user.id,
+        action: 'LOGIN_FAILED', actorId: user.id, actorRole: user.role,
+        afterData: { reason: 'account_locked', lockedUntil: user.lockedUntil },
+      });
       throw new UnauthorizedException('Invalid email or password');
     }
 
@@ -39,14 +56,23 @@ export class AuthService {
     if (!passwordValid) {
       const attempts = user.failedLoginAttempts + 1;
       const updateData: any = { failedLoginAttempts: attempts };
+      let locked = false;
 
       if (attempts >= 5) {
+        locked = true;
         updateData.lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
       }
 
       await this.prisma.user.update({
         where: { id: user.id },
         data: updateData,
+      });
+
+      await this.auditService.log({
+        module: 'auth', entityType: 'user', entityId: user.id,
+        action: locked ? 'ACCOUNT_LOCKED' : 'LOGIN_FAILED',
+        actorId: user.id, actorRole: user.role,
+        afterData: { failedAttempts: attempts, lockedUntil: updateData.lockedUntil },
       });
 
       throw new UnauthorizedException('Invalid email or password');
@@ -59,6 +85,12 @@ export class AuthService {
         data: { failedLoginAttempts: 0, lockedUntil: null },
       });
     }
+
+    await this.auditService.log({
+      module: 'auth', entityType: 'user', entityId: user.id,
+      action: 'LOGIN_SUCCESS',
+      actorId: user.id, actorRole: user.role,
+    });
 
     const tokens = await this.generateTokens(user.id, user.email, user.role);
     await this.storeRefreshToken(user.id, tokens.refreshToken);

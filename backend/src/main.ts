@@ -24,7 +24,6 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   // Security headers
-  // Security headers
   app.use(helmet({
     contentSecurityPolicy: {
       useDefaults: true,
@@ -44,7 +43,18 @@ async function bootstrap() {
       includeSubDomains: true,
       preload: true,
     },
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    crossOriginEmbedderPolicy: false,
   }));
+
+  // Restrict browser features
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    res.setHeader(
+      'Permissions-Policy',
+      'camera=(), microphone=(), geolocation=(), display-capture=(), fullscreen=(), payment=()',
+    );
+    next();
+  });
 
   // Cookie parser for httpOnly JWT cookies
   app.use(cookieParser());
@@ -69,6 +79,12 @@ async function bootstrap() {
       }
     },
     credentials: true,
+  });
+
+  // Cache-Control: prevent caching sensitive data
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    next();
   });
 
   // CSRF protection: custom header check (cross-origin requests can't set custom headers without CORS preflight)

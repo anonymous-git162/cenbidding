@@ -6,6 +6,7 @@ import * as bcrypt from 'bcryptjs';
 import { AuthService } from './auth.service';
 import { configuration } from '../../config/app.config';
 import { PrismaService } from '../../database/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { mockPrisma, MockPrisma } from '../../../test/prisma-mock';
 
 describe('AuthService', () => {
@@ -53,6 +54,7 @@ describe('AuthService', () => {
         AuthService,
         { provide: PrismaService, useValue: prisma },
         { provide: ConfigService, useValue: mockConfigService },
+        { provide: AuditService, useValue: { log: jest.fn() } },
         JwtService,
       ],
     }).compile();
