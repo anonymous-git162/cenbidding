@@ -1,5 +1,8 @@
 import axios from 'axios';
 
+// CSRF protection: custom header required on all state-changing requests
+axios.defaults.headers.common['X-Requested-By'] = 'ebidding-app';
+
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
   headers: { 'Content-Type': 'application/json' },

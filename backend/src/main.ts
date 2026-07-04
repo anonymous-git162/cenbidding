@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
@@ -62,6 +63,18 @@ async function bootstrap() {
       }
     },
     credentials: true,
+  });
+
+  // CSRF protection: custom header check (cross-origin requests can't set custom headers without CORS preflight)
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    if (['POST', 'PATCH', 'DELETE', 'PUT'].includes(req.method)) {
+      const csrfHeader = req.headers['x-requested-by'];
+      if (!csrfHeader || csrfHeader !== 'ebidding-app') {
+        res.status(403).json({ message: 'Forbidden' });
+        return;
+      }
+    }
+    next();
   });
 
   // Input validation
