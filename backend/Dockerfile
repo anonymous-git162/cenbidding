@@ -15,4 +15,5 @@ COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/prisma ./prisma
 EXPOSE 3000
-CMD ["sh", "-c", "npx prisma migrate deploy && node prisma/seed.prod.js && node dist/src/main.js"]
+# ponytail: db push instead of migrate deploy — more reliable when migration state gets out of sync (Render free tier DB resets)
+CMD ["sh", "-c", "npx prisma db push 2>&1 && node prisma/seed.prod.js && node dist/src/main.js"]
