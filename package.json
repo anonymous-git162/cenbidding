@@ -1,10 +1,9 @@
 {
   "name": "ebidding-final",
   "private": true,
-  "workspaces": ["frontend", "backend"],
   "scripts": {
-    "prepare": "husky",
-    "build": "cd frontend && npm run build",
+    "prepare": "husky || true",
+    "build": "cd frontend && npm install && npm run build",
     "lint": "cd backend && npm run lint && cd ../frontend && npm run lint",
     "snyk": "npx snyk test",
     "typecheck": "cd backend && npx tsc --noEmit && cd ../frontend && npx tsc --noEmit",
