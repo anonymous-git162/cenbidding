@@ -11,8 +11,15 @@ import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
 
+interface Challenge {
+  answer: number;
+  expiresAt: Date;
+}
+
 @Injectable()
 export class AuthService {
+  private challenges = new Map<string, Challenge>();
+
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
@@ -20,7 +27,32 @@ export class AuthService {
     private auditService: AuditService,
   ) {}
 
+  createChallenge(): { id: string; question: string } {
+    const a = Math.floor(Math.random() * 20) + 1;
+    const b = Math.floor(Math.random() * 20) + 1;
+    const id = crypto.randomUUID();
+    this.challenges.set(id, { answer: a + b, expiresAt: new Date(Date.now() + 300000) });
+    setTimeout(() => this.challenges.delete(id), 300000);
+    return { id, question: `What is ${a} + ${b}?` };
+  }
+
+  private validateChallenge(dto: LoginDto) {
+    if (!dto.challengeId || !dto.challengeAnswer) return;
+    const stored = this.challenges.get(dto.challengeId);
+    if (!stored || stored.expiresAt < new Date()) {
+      if (stored) this.challenges.delete(dto.challengeId);
+      throw new BadRequestException('Challenge expired or invalid');
+    }
+    if (parseInt(dto.challengeAnswer) !== stored.answer) {
+      this.challenges.delete(dto.challengeId);
+      throw new BadRequestException('Challenge answer is incorrect');
+    }
+    this.challenges.delete(dto.challengeId);
+  }
+
   async login(dto: LoginDto) {
+    this.validateChallenge(dto);
+
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });

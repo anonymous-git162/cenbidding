@@ -4,6 +4,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import * as crypto from 'crypto';
 import { AppModule } from './app.module';
 
 function requireEnv(name: string): string {
@@ -23,21 +24,15 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
+  // CSP nonce generation (one per request)
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    res.locals.cspNonce = crypto.randomBytes(16).toString('hex');
+    next();
+  });
+
   // Security headers
   app.use(helmet({
-    contentSecurityPolicy: {
-      useDefaults: true,
-      directives: {
-        defaultSrc: [`'self'`],
-        scriptSrc: [`'self'`, `'unsafe-inline'`, `'unsafe-eval'`],
-        styleSrc: [`'self'`, `'unsafe-inline'`],
-        imgSrc: [`'self'`, 'data:', 'validator.swagger.io'],
-        connectSrc: [`'self'`],
-        fontSrc: [`'self'`],
-        objectSrc: [`'none'`],
-        frameSrc: [`'none'`],
-      },
-    },
+    contentSecurityPolicy: false,
     hsts: {
       maxAge: 31536000,
       includeSubDomains: true,
@@ -47,12 +42,47 @@ async function bootstrap() {
     crossOriginEmbedderPolicy: false,
   }));
 
-  // Restrict browser features
+  // Content-Security-Policy: strict nonce-based for API, relaxed for Swagger UI
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const isSwagger = req.path.startsWith('/api/docs');
+    res.setHeader(
+      'Content-Security-Policy',
+      isSwagger
+        ? [
+            `default-src 'self'`,
+            `script-src 'self' 'unsafe-inline' 'unsafe-eval'`,
+            `style-src 'self' 'unsafe-inline'`,
+            `img-src 'self' data: validator.swagger.io`,
+            `font-src 'self' data:`,
+            `connect-src 'self'`,
+            `object-src 'none'`,
+            `base-uri 'self'`,
+            `form-action 'self'`,
+            `frame-ancestors 'none'`,
+          ].join('; ')
+        : [
+            `default-src 'self'`,
+            `script-src 'self' 'nonce-${res.locals.cspNonce}'`,
+            `style-src 'self' 'nonce-${res.locals.cspNonce}'`,
+            `img-src 'self' data:`,
+            `font-src 'self'`,
+            `connect-src 'self'`,
+            `object-src 'none'`,
+            `base-uri 'self'`,
+            `form-action 'self'`,
+            `frame-ancestors 'none'`,
+          ].join('; '),
+    );
+    next();
+  });
+
+  // Restrict browser features and cross-origin resource loading
   app.use((req: Request, res: Response, next: NextFunction) => {
     res.setHeader(
       'Permissions-Policy',
       'camera=(), microphone=(), geolocation=(), display-capture=(), fullscreen=(), payment=()',
     );
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     next();
   });
 
@@ -79,6 +109,7 @@ async function bootstrap() {
       }
     },
     credentials: true,
+    maxAge: 86400,
   });
 
   // Cache-Control: prevent caching sensitive data

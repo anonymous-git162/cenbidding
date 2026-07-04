@@ -29,6 +29,13 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Public()
+  @Get('challenge')
+  @ApiOperation({ summary: 'Get a CAPTCHA challenge for login' })
+  getChallenge() {
+    return this.authService.createChallenge();
+  }
+
+  @Public()
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('login')
   @ApiOperation({ summary: 'Login with email and password' })
