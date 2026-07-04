@@ -22,14 +22,15 @@ async function bootstrap() {
   requireEnv('REFRESH_TOKEN_SECRET');
 
   // ponytail: run schema push at startup for reliability; switch to prisma migrate deploy for strict migration tracking
-  console.log('>>> Running prisma db push...');
   try {
-    const push = execSync('npx --yes prisma db push 2>&1', { encoding: 'utf-8', maxBuffer: 1024 * 1024 });
-    console.log('>>>', push.trim().split('\n').slice(-3).join('\n'));
-    console.log('>>> Running seed...');
-    execSync('node prisma/seed.prod.js 2>&1', { stdio: 'inherit' });
+    process.stderr.write('>>> PUSH START\n');
+    const push = execSync('npx --yes prisma db push', { encoding: 'utf-8', maxBuffer: 1024 * 1024 });
+    process.stderr.write('>>> PUSH OK: ' + push.trim().split('\n').slice(-3).join(',') + '\n');
+    process.stderr.write('>>> SEED START\n');
+    execSync('node prisma/seed.prod.js', { stdio: 'inherit' });
+    process.stderr.write('>>> SEED OK\n');
   } catch (error) {
-    console.error('>>> Migration/seed failed (non-fatal):', error);
+    process.stderr.write('>>> DB INIT FAILED: ' + (error?.toString() || 'unknown') + '\n');
   }
 
   const app = await NestFactory.create(AppModule);
