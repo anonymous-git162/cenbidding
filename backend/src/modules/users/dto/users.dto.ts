@@ -41,6 +41,10 @@ export class CreateUserDto {
   @IsOptional()
   @IsString()
   managerId?: string;
+
+  @IsOptional()
+  @IsString()
+  companyName?: string;
 }
 
 export class UpdateUserDto {
