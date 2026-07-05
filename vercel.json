@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
   "buildCommand": "npm install && npm run build",
-  "outputDirectory": "dist",
+  "outputDirectory": "frontend/dist",
   "installCommand": "npm install",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "https://ebidding-final.onrender.com/api/$1" },
