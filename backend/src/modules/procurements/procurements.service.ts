@@ -805,4 +805,10 @@ export class ProcurementsService {
       recentActivity,
     };
   }
+
+  async remove(id: string) {
+    const procurement = await this.prisma.procurement.findUnique({ where: { id } });
+    if (!procurement) throw new NotFoundException('Procurement not found');
+    return this.prisma.procurement.delete({ where: { id } });
+  }
 }

@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -228,6 +229,13 @@ export class ProcurementsController {
   @ApiOperation({ summary: 'Send contract to winning vendor' })
   sendContract(@Param('id') id: string, @Request() req: any) {
     return this.procurementsService.sendContract(id, req.user.id);
+  }
+
+  @Delete(':id')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Delete a procurement (admin only)' })
+  remove(@Param('id') id: string) {
+    return this.procurementsService.remove(id);
   }
 
   @Post(':id/award/complete')
