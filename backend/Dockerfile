@@ -5,7 +5,7 @@ RUN npm ci
 COPY prisma ./prisma
 RUN npx prisma generate
 COPY . .
-RUN npm run build
+RUN npx nest build
 
 FROM node:22-alpine
 WORKDIR /app
