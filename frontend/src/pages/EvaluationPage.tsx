@@ -142,7 +142,10 @@ export default function EvaluationPage() {
   };
 
   const applyAiScore = () => {
-    setScores({ ...scores, [aiDialog.vendorId]: { score: aiDialog.score, comment: `AI: ${aiDialog.reasoning.split('\n')[0]}` } });
+    const b = aiDialog.breakdown;
+    const keys = ['price', 'technicalQuality', 'serviceDelivery', 'qualificationsExperience'];
+    const criterionScores = b && keys.every(k => k in b) ? keys.map((k, i) => ({ criteriaIndex: i, score: b[k].raw ?? 50 })) : undefined;
+    setScores({ ...scores, [aiDialog.vendorId]: { score: aiDialog.score, comment: `AI: ${aiDialog.reasoning.split('\n')[0]}`, criterionScores } });
     setAiDialog({ ...aiDialog, open: false });
   };
 
