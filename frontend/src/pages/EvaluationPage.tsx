@@ -181,7 +181,7 @@ export default function EvaluationPage() {
 
       <Card elevation={0} sx={{ mb: 3, border: '1px solid', borderColor: 'divider' }}>
         <CardContent>
-          <TextField select fullWidth size="small" label="Select Procurement" value={selected}
+          <TextField select fullWidth label="Select Procurement" value={selected}
             onChange={(e) => { setSelected(e.target.value); setTab(0); }}
             SelectProps={{ native: true }}>
             <option value="">Select a procurement...</option>
