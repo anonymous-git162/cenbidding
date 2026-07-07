@@ -100,12 +100,11 @@ describe('AiService', () => {
             {
               message: {
                 content: JSON.stringify({
-                  score: 85,
+                  price: 85,
+                  technicalQuality: 75,
+                  serviceDelivery: 80,
+                  qualificationsExperience: 70,
                   reasoning: 'Good vendor',
-                  priceCompetitiveness: 35,
-                  marketPosition: 15,
-                  completeness: 18,
-                  baseQuality: 17,
                 }),
               },
             },
@@ -126,8 +125,11 @@ describe('AiService', () => {
       };
 
       const result = await service.scoreVendor(input);
-      expect(result.score).toBe(85);
-      expect(result.breakdown.priceCompetitiveness).toBe(35);
+      // 85*0.4 + 75*0.4 + 80*0.1 + 70*0.1 = 34 + 30 + 8 + 7 = 79
+      expect(result.score).toBe(79);
+      expect(result.breakdown.price.raw).toBe(85);
+      expect(result.breakdown.price.weight).toBe(40);
+      expect(result.breakdown.price.net).toBe(34);
     });
 
     it('should return fallback scoring when API fails', async () => {

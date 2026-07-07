@@ -16,14 +16,20 @@ interface VendorScoreRequest {
   procurementTitle: string;
 }
 
+export interface BreakdownCriterion {
+  raw: number;
+  weight: number;
+  net: number;
+}
+
 export interface VendorScoreResponse {
   score: number;
   reasoning: string;
   breakdown: {
-    priceCompetitiveness: number;
-    marketPosition: number;
-    completeness: number;
-    baseQuality: number;
+    price: BreakdownCriterion;
+    technicalQuality: BreakdownCriterion;
+    serviceDelivery: BreakdownCriterion;
+    qualificationsExperience: BreakdownCriterion;
   };
 }
 
@@ -216,7 +222,7 @@ Generate the complete TOR document now:`;
     const minPrice = Math.min(...input.allVendorPrices);
     const maxPrice = Math.max(...input.allVendorPrices);
 
-    return `You are a procurement evaluator for Centara Hotels & Resorts. Analyze this vendor proposal and provide a score.
+    return `You are a procurement evaluator for Centara Hotels & Resorts. Analyze this vendor proposal and score each criterion 0-100.
 
 Procurement: ${input.procurementTitle}
 Vendor: ${input.vendorName}
@@ -228,19 +234,19 @@ Market Context:
 - Lowest bid: $${minPrice.toLocaleString()}
 - Highest bid: $${maxPrice.toLocaleString()}
 
-Score the vendor on a scale of 0-100 based on:
-1. Price Competitiveness (40 points): How does the price compare to others?
-2. Market Position (20 points): Is the price below or above average?
-3. Completeness (20 points): How detailed is the proposal?
-4. Base Quality (20 points): General quality assessment
+Score the vendor on a scale of 0-100 for EACH criterion:
 
-Respond in this exact JSON format:
+1. Price Criteria (Weight: 40%): Evaluate price competitiveness. The vendor with the lowest bid receives the highest score. Consider how the proposed price compares to other bids.
+2. Technical & Quality Criteria (Weight: 40%): Evaluate compliance with functional/technical requirements, premium features/specifications beyond minimums, and the implementation methodology/work plan.
+3. Service & Delivery Criteria (Weight: 10%): Evaluate delivery lead time, warranty period, and after-sales service/SLA commitments.
+4. Qualifications & Experience Criteria (Weight: 10%): Evaluate proven track record, team expertise/certifications, and company profile/financial stability.
+
+Respond ONLY with valid JSON in this exact format. No markdown, no code fences.
 {
-  "score": <number 0-100>,
-  "priceCompetitiveness": <number 0-40>,
-  "marketPosition": <number 0-20>,
-  "completeness": <number 0-20>,
-  "baseQuality": <number 0-20>,
+  "price": <number 0-100>,
+  "technicalQuality": <number 0-100>,
+  "serviceDelivery": <number 0-100>,
+  "qualificationsExperience": <number 0-100>,
   "reasoning": "<detailed explanation of the scoring>"
 }`;
   }
@@ -253,20 +259,29 @@ Respond in this exact JSON format:
       const jsonMatch = response.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
+        const clamp = (v: number) => Math.min(100, Math.max(0, v));
+        const criteria = {
+          price: clamp(parsed.price ?? 50),
+          technicalQuality: clamp(parsed.technicalQuality ?? 50),
+          serviceDelivery: clamp(parsed.serviceDelivery ?? 50),
+          qualificationsExperience: clamp(parsed.qualificationsExperience ?? 50),
+        };
+        const weights = { price: 0.4, technicalQuality: 0.4, serviceDelivery: 0.1, qualificationsExperience: 0.1 };
+        const net = (raw: number, w: number) => Math.round(raw * w * 10) / 10;
+        const total = Math.round(
+          criteria.price * weights.price +
+          criteria.technicalQuality * weights.technicalQuality +
+          criteria.serviceDelivery * weights.serviceDelivery +
+          criteria.qualificationsExperience * weights.qualificationsExperience,
+        );
         return {
-          score: Math.min(100, Math.max(0, parsed.score || 50)),
+          score: total,
           reasoning: parsed.reasoning || 'AI scoring completed',
           breakdown: {
-            priceCompetitiveness: Math.min(
-              40,
-              Math.max(0, parsed.priceCompetitiveness || 20),
-            ),
-            marketPosition: Math.min(
-              20,
-              Math.max(0, parsed.marketPosition || 10),
-            ),
-            completeness: Math.min(20, Math.max(0, parsed.completeness || 10)),
-            baseQuality: Math.min(20, Math.max(0, parsed.baseQuality || 10)),
+            price: { raw: criteria.price, weight: 40, net: net(criteria.price, 0.4) },
+            technicalQuality: { raw: criteria.technicalQuality, weight: 40, net: net(criteria.technicalQuality, 0.4) },
+            serviceDelivery: { raw: criteria.serviceDelivery, weight: 10, net: net(criteria.serviceDelivery, 0.1) },
+            qualificationsExperience: { raw: criteria.qualificationsExperience, weight: 10, net: net(criteria.qualificationsExperience, 0.1) },
           },
         };
       }
@@ -277,36 +292,29 @@ Respond in this exact JSON format:
   }
 
   private fallbackScoring(input: VendorScoreRequest): VendorScoreResponse {
-    const avgPrice =
-      input.allVendorPrices.reduce((a, b) => a + b, 0) /
-      input.allVendorPrices.length;
     const maxPrice = Math.max(...input.allVendorPrices);
     const minPrice = Math.min(...input.allVendorPrices);
     const priceRange = maxPrice - minPrice || 1;
 
-    const priceScore = Math.round(
-      ((maxPrice - input.price) / priceRange) * 40 + 60,
-    );
-    const competitivenessScore =
-      input.price <= avgPrice
-        ? 20
-        : Math.round(20 * (1 - (input.price - avgPrice) / priceRange));
-    const totalScore = Math.min(
-      100,
-      Math.max(0, priceScore + 20 + competitivenessScore + 20),
-    );
+    const net = (raw: number, w: number) => Math.round(raw * w * 10) / 10;
+    const price = Math.round(((maxPrice - input.price) / priceRange) * 100);
+    const technicalQuality = 70;
+    const serviceDelivery = 70;
+    const qualificationsExperience = 70;
+    const total = Math.round(price * 0.4 + technicalQuality * 0.4 + serviceDelivery * 0.1 + qualificationsExperience * 0.1);
 
     return {
-      score: totalScore,
+      score: total,
       reasoning: `Fallback scoring based on price analysis:
 Price: $${input.price.toLocaleString()}
-Market Average: $${Math.round(avgPrice).toLocaleString()}
-Position: ${input.price <= avgPrice ? 'Below average (competitive)' : 'Above average'}`,
+Lowest: $${minPrice.toLocaleString()}
+Highest: $${maxPrice.toLocaleString()}
+Price Score: ${price}/100`,
       breakdown: {
-        priceCompetitiveness: priceScore,
-        marketPosition: competitivenessScore,
-        completeness: 20,
-        baseQuality: 20,
+        price: { raw: price, weight: 40, net: net(price, 0.4) },
+        technicalQuality: { raw: technicalQuality, weight: 40, net: net(technicalQuality, 0.4) },
+        serviceDelivery: { raw: serviceDelivery, weight: 10, net: net(serviceDelivery, 0.1) },
+        qualificationsExperience: { raw: qualificationsExperience, weight: 10, net: net(qualificationsExperience, 0.1) },
       },
     };
   }

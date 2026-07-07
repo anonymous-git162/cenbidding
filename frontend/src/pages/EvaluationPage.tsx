@@ -89,10 +89,10 @@ export default function EvaluationPage() {
 
   const openCriteriaDialog = () => {
     setCriteriaForm(criteria.length ? criteria : [
-      { name: 'Price', weight: 40, maxScore: 100 },
-      { name: 'Quality', weight: 30, maxScore: 100 },
-      { name: 'Delivery', weight: 20, maxScore: 100 },
-      { name: 'Compliance', weight: 10, maxScore: 100 },
+      { name: 'Price Criteria', weight: 40, maxScore: 100 },
+      { name: 'Technical & Quality Criteria', weight: 40, maxScore: 100 },
+      { name: 'Service & Delivery Criteria', weight: 10, maxScore: 100 },
+      { name: 'Qualifications & Experience Criteria', weight: 10, maxScore: 100 },
     ]);
     setCriteriaDialog(true);
   };
@@ -412,16 +412,32 @@ export default function EvaluationPage() {
             {aiDialog.breakdown ? (
               <>
                 {[
-                  { label: 'Price Competitiveness', score: aiDialog.breakdown.priceCompetitiveness, max: 40 },
-                  { label: 'Market Position', score: aiDialog.breakdown.marketPosition, max: 20 },
-                  { label: 'Completeness', score: aiDialog.breakdown.completeness, max: 20 },
-                  { label: 'Base Quality', score: aiDialog.breakdown.baseQuality, max: 20 },
-                ].map((item, i) => (
-                  <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.5, px: 1, mb: 0.5, bgcolor: getScoreBg(item.score, item.max), borderRadius: 0.5 }}>
-                    <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{item.label}</Typography>
-                    <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 700, color: getScoreColor(item.score, item.max) }}>{item.score}/{item.max}</Typography>
-                  </Box>
-                ))}
+                  { key: 'price', label: 'Price Criteria', desc: 'Evaluated automatically by system logic (Objective Evaluation).', subs: ['Total Proposed Price'] },
+                  { key: 'technicalQuality', label: 'Technical & Quality Criteria', desc: 'Evaluated by the committee based on proposal documents (Subjective/Expert Evaluation).', subs: ['Functional Compliance', 'Premium Features / Specifications', 'Methodology & Work Plan'] },
+                  { key: 'serviceDelivery', label: 'Service & Delivery Criteria', desc: 'Evaluated based on commitment SLAs.', subs: ['Delivery Lead Time', 'Warranty Period', 'After-sales Service & SLA'] },
+                  { key: 'qualificationsExperience', label: 'Qualifications & Experience Criteria', desc: 'Evaluated based on vendor profile and corporate credentials.', subs: ['Proven Track Record / Case Studies', 'Team Expertise & Certifications', 'Company Profile & Financial Stability'] },
+                ].map((item) => {
+                  const b = aiDialog.breakdown[item.key];
+                  if (!b) return null;
+                  return (
+                    <Box key={item.key} sx={{ mb: 1.5, p: 1.5, bgcolor: getScoreBg(b.raw, 100), borderRadius: 1 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700 }}>{item.label}</Typography>
+                        <Chip label={`Wt: ${b.weight}%`} size="small" variant="outlined" sx={{ fontSize: 11 }} />
+                      </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                        <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>Raw: {b.raw}/100</Typography>
+                        <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 700, color: getScoreColor(b.raw, 100) }}>Net: {b.net}/{b.weight}</Typography>
+                      </Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.25, fontStyle: 'italic' }}>
+                        {item.desc}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                        Sub-criteria: {item.subs.join(', ')}
+                      </Typography>
+                    </Box>
+                  );
+                })}
               </>
             ) : (
               aiDialog.reasoning.split('\n').filter((l: string) => l.startsWith('  ') || l.startsWith('Score:')).map((line: string, i: number) => {
@@ -446,7 +462,7 @@ export default function EvaluationPage() {
             ))}
           </Box>
 
-          <Alert severity="info" sx={{ mt: 2 }}>AI suggestion based on price analysis. Accept or modify manually.</Alert>
+          <Alert severity="info" sx={{ mt: 2 }}>Scoring formula: Raw Score × Weight = Net Score. Total = sum of all net scores. AI suggestion based on analysis of price, proposal, and market data. Accept or modify manually.</Alert>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setAiDialog({ ...aiDialog, open: false })}>Cancel</Button>
