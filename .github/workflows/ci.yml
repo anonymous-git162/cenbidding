@@ -15,44 +15,44 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-      uses: actions/checkout@v3
+        uses: actions/checkout@v3
 
       - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '24'
-        cache: 'npm'
+        uses: actions/setup-node@v3
+        with:
+          node-version: '24'
+          cache: 'npm'
 
       - name: Install Dependencies (Root)
-      run: npm ci
+        run: npm ci
 
       - name: Install Dependencies (Backend)
-      run: |
-        cd backend
-        npm ci
+        run: |
+          cd backend
+          npm ci
 
       - name: Generate Prisma Client
-      run: |
-        cd backend
-        npx prisma generate
+        run: |
+          cd backend
+          npx prisma generate
 
       - name: TypeScript Check (Backend)
-      run: |
-        cd backend
-        npx tsc --noEmit
+        run: |
+          cd backend
+          npx tsc --noEmit
 
       - name: Lint Code
-      run: |
-        cd backend
-        npm run lint
+        run: |
+          cd backend
+          npm run lint
 
       - name: Run Unit Tests
-      run: |
-        cd backend
-        npm run test
+        run: |
+          cd backend
+          npm run test
 
       - name: Upload Coverage Report
-      uses: actions/upload-artifact@v4
-      with:
-        name: coverage-report
-        path: backend/coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: backend/coverage
