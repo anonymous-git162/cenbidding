@@ -7,7 +7,7 @@ services:
     branch: master
     rootDir: backend
     buildCommand: npm ci && npx prisma generate && npx nest build
-    startCommand: npx prisma migrate deploy && node dist/src/main.js
+    startCommand: npx prisma db push && node dist/src/main.js
     healthCheckPath: /api/health
     autoDeployTrigger: commit
     envVars:
