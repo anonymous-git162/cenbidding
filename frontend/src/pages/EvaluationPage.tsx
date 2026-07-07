@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import {
   Box, Card, CardContent, Typography, Button, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, TextField, Slider, Alert, Divider, Tabs, Tab, Chip, CircularProgress,
-  Dialog, DialogTitle, DialogContent, DialogActions, IconButton,
+  Dialog, DialogTitle, DialogContent, DialogActions, IconButton, FormControl, InputLabel, Select, MenuItem,
 } from '@mui/material';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -181,14 +181,16 @@ export default function EvaluationPage() {
 
       <Card elevation={0} sx={{ mb: 3, border: '1px solid', borderColor: 'divider' }}>
         <CardContent>
-          <TextField select fullWidth label="Select Procurement" value={selected}
-            onChange={(e) => { setSelected(e.target.value); setTab(0); }}
-            SelectProps={{ native: true }}>
-            <option value="">Select a procurement...</option>
-            {procurements.map((p) => (
-              <option key={p.id} value={p.id}>{p.requestNo} - {p.title} [{p.status}]</option>
-            ))}
-          </TextField>
+          <FormControl fullWidth>
+            <InputLabel id="proc-select-label">Procurement</InputLabel>
+            <Select labelId="proc-select-label" label="Procurement" value={selected}
+              onChange={(e) => { setSelected(e.target.value); setTab(0); }}>
+              <MenuItem value=""><em>Select a procurement...</em></MenuItem>
+              {procurements.map((p) => (
+                <MenuItem key={p.id} value={p.id}>{p.requestNo} - {p.title} [{p.status}]</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           {procurements.length === 0 && !loading && (
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
               No procurements available for evaluation
