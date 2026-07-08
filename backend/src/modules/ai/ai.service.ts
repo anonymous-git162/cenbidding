@@ -216,11 +216,10 @@ Generate the complete TOR document now:`;
   }
 
   private buildScorePrompt(input: VendorScoreRequest): string {
-    const avgPrice =
-      input.allVendorPrices.reduce((a, b) => a + b, 0) /
-      input.allVendorPrices.length;
-    const minPrice = Math.min(...input.allVendorPrices);
-    const maxPrice = Math.max(...input.allVendorPrices);
+    const prices = input.allVendorPrices?.length ? input.allVendorPrices : [input.price];
+    const avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length;
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
 
     return `You are a procurement evaluator for Centara Hotels & Resorts. Analyze this vendor proposal and score each criterion 0-100.
 
@@ -292,8 +291,9 @@ Respond ONLY with valid JSON in this exact format. No markdown, no code fences.
   }
 
   private fallbackScoring(input: VendorScoreRequest): VendorScoreResponse {
-    const maxPrice = Math.max(...input.allVendorPrices);
-    const minPrice = Math.min(...input.allVendorPrices);
+    const prices = input.allVendorPrices?.length ? input.allVendorPrices : [input.price];
+    const maxPrice = Math.max(...prices);
+    const minPrice = Math.min(...prices);
     const priceRange = maxPrice - minPrice || 1;
 
     const net = (raw: number, w: number) => Math.round(raw * w * 10) / 10;
