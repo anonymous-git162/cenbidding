@@ -48,7 +48,7 @@ export class AiService {
       this.configService.get<string>('GROQ_MODEL') || 'llama-3.3-70b-versatile';
     this.copilotSecret =
       this.configService.get<string>('COPILOT_STUDIO_SECRET') || '';
-    this.logger.log(`AI provider: ${this.provider}`);
+    this.logger.log(`AI provider: ${this.provider}, groqKeySet: ${!!this.groqApiKey}, model: ${this.groqModel}`);
   }
 
   private async callAI(prompt: string): Promise<string> {
