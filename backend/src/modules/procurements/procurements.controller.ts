@@ -144,6 +144,17 @@ export class ProcurementsController {
     return this.procurementsService.cancel(id, req.user.id, dto.reason);
   }
 
+  @Post(':id/rfp/publish')
+  @Roles(UserRole.PROCUREMENT)
+  @ApiOperation({ summary: 'Publish RFP from RFP_DRAFTING' })
+  publishRfp(
+    @Param('id') id: string,
+    @Body() dto: PublishDto,
+    @Request() req: any,
+  ) {
+    return this.procurementsService.publishRfp(id, req.user.id, dto.submissionDeadline);
+  }
+
   @Post(':id/rfi/start-collection')
   @Roles(UserRole.PROCUREMENT)
   @ApiOperation({ summary: 'Start RFI collection period' })

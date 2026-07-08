@@ -391,6 +391,41 @@ export class ProcurementsService {
     );
   }
 
+  async publishRfp(id: string, userId: string, submissionDeadline?: string) {
+    const procurement = await this.prisma.procurement.findUnique({
+      where: { id },
+    });
+    if (!procurement) throw new NotFoundException('Procurement not found');
+
+    const updated = await this.prisma.procurement.update({
+      where: { id },
+      data: {
+        status: 'RFP_PUBLISHED',
+        currentOwnerRole: 'VENDOR',
+        currentStage: 'PUBLISHED',
+        publishedAt: new Date(),
+        submissionDeadline: submissionDeadline
+          ? new Date(submissionDeadline)
+          : null,
+      },
+    });
+
+    await this.appendTimeline(id, 'RFP_PUBLISHED', 'PROCUREMENT', userId, {
+      submissionDeadline,
+    });
+    await this.logAudit(
+      'procurements',
+      id,
+      'PUBLISH_RFP',
+      userId,
+      'PROCUREMENT',
+      procurement,
+      updated,
+    );
+
+    return updated;
+  }
+
   async startRfiCollection(id: string, userId: string) {
     return this.transition(
       id,

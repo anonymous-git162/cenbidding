@@ -89,6 +89,7 @@ export default function ProcurementDetailPage() {
       else if (action === 'startRfiCollection') await api.post(`/procurements/${id}/rfi/start-collection`);
       else if (action === 'closeRfi') await api.post(`/procurements/${id}/rfi/close`);
       else if (action === 'draftRfp') await api.post(`/procurements/${id}/rfp/draft`);
+      else if (action === 'publishRfp') await api.post(`/procurements/${id}/rfp/publish`, { submissionDeadline: deadline || undefined });
       else if (action === 'cancel') await api.post(`/procurements/${id}/cancel`, { reason: comment });
       setDialog(null);
       setComment('');
@@ -160,6 +161,9 @@ export default function ProcurementDetailPage() {
           )}
           {role === 'PROCUREMENT' && status === 'RFI_CLOSED' && (
             <Button variant="contained" color="primary" startIcon={<Icon name="Description" />} onClick={() => handleAction('draftRfp')}>Draft RFP</Button>
+          )}
+          {role === 'PROCUREMENT' && status === 'RFP_DRAFTING' && (
+            <Button variant="contained" color="success" startIcon={<Icon name="Publish" />} onClick={() => handleAction('publishRfp')}>Publish RFP</Button>
           )}
           {role === 'PROCUREMENT' && status === 'RETURNED_FROM_APPROVAL' && (
             <Button variant="contained" color="warning" startIcon={<Icon name="Send" />} onClick={() => handleAction('resubmitForApproval')}>Resubmit for Approval</Button>
