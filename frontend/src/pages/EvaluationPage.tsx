@@ -141,9 +141,21 @@ export default function EvaluationPage() {
     }
   };
 
-  const applyAiScore = () => {
+  const applyAiScore = async () => {
     const b = aiDialog.breakdown;
     const keys = ['price', 'technicalQuality', 'serviceDelivery', 'qualificationsExperience'];
+    if (!criteria.length && b && keys.every(k => k in b)) {
+      const defaults = [
+        { name: 'Price Criteria', weight: 40, maxScore: 100 },
+        { name: 'Technical & Quality Criteria', weight: 40, maxScore: 100 },
+        { name: 'Service & Delivery Criteria', weight: 10, maxScore: 100 },
+        { name: 'Qualifications & Experience Criteria', weight: 10, maxScore: 100 },
+      ];
+      try {
+        await api.put(`/evaluation/${selected}/criteria`, { criteria: defaults });
+        setCriteria(defaults);
+      } catch { /* ignore */ }
+    }
     const criterionScores = b && keys.every(k => k in b) ? keys.map((k, i) => ({ criteriaIndex: i, score: b[k].raw ?? 50 })) : undefined;
     setScores({ ...scores, [aiDialog.vendorId]: { score: aiDialog.score, comment: `AI: ${aiDialog.reasoning.split('\n')[0]}`, criterionScores } });
     setAiDialog({ ...aiDialog, open: false });
