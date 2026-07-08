@@ -15,6 +15,21 @@ export class RfqSubmissionService {
     price: number,
     proposalText?: string,
   ) {
+    const procurement = await this.prisma.procurement.findUnique({
+      where: { id: procurementId },
+      select: { id: true },
+    });
+    if (!procurement) throw new NotFoundException('Procurement not found');
+
+    const invitation = await this.prisma.vendorInvitation.findFirst({
+      where: { procurementId, vendorId, invitationStatus: 'ACCEPTED' },
+    });
+    if (!invitation) {
+      throw new BadRequestException(
+        'You must accept the invitation before submitting a proposal.',
+      );
+    }
+
     return this.prisma.rfqSubmission.create({
       data: { procurementId, vendorId, price, proposalText, status: 'DRAFT' },
     });
