@@ -89,4 +89,20 @@ export class RfqSubmissionService {
       where: { procurementId, vendor: { userId: vendorUserId } },
     });
   }
+
+  async findAllMySubmissions(vendorUserId: string) {
+    const vendor = await this.prisma.vendor.findUnique({
+      where: { userId: vendorUserId },
+    });
+    if (!vendor) return [];
+    return this.prisma.rfqSubmission.findMany({
+      where: { vendorId: vendor.id },
+      include: {
+        procurement: {
+          select: { id: true, requestNo: true, title: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 }

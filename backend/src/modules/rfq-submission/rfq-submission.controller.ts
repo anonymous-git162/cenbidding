@@ -89,4 +89,11 @@ export class RfqSubmissionController {
   findMy(@Param('procurementId') procurementId: string, @Request() req: any) {
     return this.submissionService.findMySubmission(procurementId, req.user.id);
   }
+
+  @Get('my')
+  @Roles(UserRole.VENDOR)
+  @ApiOperation({ summary: 'Get all my submissions' })
+  findMyAll(@Request() req: any) {
+    return this.submissionService.findAllMySubmissions(req.user.id);
+  }
 }

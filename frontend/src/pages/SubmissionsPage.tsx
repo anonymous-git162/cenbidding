@@ -12,21 +12,26 @@ import FileUploader from '../components/FileUploader';
 export default function SubmissionsPage() {
   const { user } = useAuth();
   const [procurements, setProcurements] = useState<any[]>([]);
+  const [mySubmissions, setMySubmissions] = useState<any[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({ procurementId: '', price: '', proposalText: '' });
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [fileAttachments, setFileAttachments] = useState<{ id: string; fileName: string; fileSize: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [fileUploadKey, setFileUploadKey] = useState(0);
 
   useEffect(() => { load(); }, []);
 
+  const submittedIds = new Set(mySubmissions.filter(s => s.status === 'SUBMITTED').map(s => s.procurementId));
+
   const load = async () => {
     try {
       const statusFilter = user?.role === 'VENDOR' ? 'RFQ_OPEN,RFP_PUBLISHED,RFI_PUBLISHED' : 'RFQ_OPEN';
-      const [procRes, invRes] = await Promise.all([
+      const [procRes, invRes, subRes] = await Promise.all([
         api.get('/procurements', { params: { status: statusFilter, limit: 50 } }),
         api.get('/vendor-invitations/my').catch(() => ({ data: [] })),
+        api.get('/rfq-submissions/my').catch(() => ({ data: [] })),
       ]);
 
       let list = procRes.data.data || [];
@@ -37,6 +42,7 @@ export default function SubmissionsPage() {
         list = list.filter((p: any) => acceptedIds.includes(p.id));
       }
       setProcurements(list);
+      setMySubmissions(subRes.data || []);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed');
     } finally {
@@ -56,7 +62,9 @@ export default function SubmissionsPage() {
       setForm({ procurementId: '', price: '', proposalText: '' });
       setFileAttachments([]);
       setFileUploadKey(k => k + 1);
+      setSuccess('Submission sent successfully!');
       load();
+      setTimeout(() => setSuccess(''), 5000);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed');
     }
@@ -71,6 +79,7 @@ export default function SubmissionsPage() {
         )}
       </Box>
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
+      {success && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>{success}</Alert>}
 
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><LinearProgress sx={{ width: '100%', borderRadius: 1 }} /></Box>
@@ -88,6 +97,7 @@ export default function SubmissionsPage() {
                     <TableCell>Title</TableCell>
                     <TableCell>Status</TableCell>
                     <TableCell>Deadline</TableCell>
+                    <TableCell align="center">My Submission</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -97,6 +107,13 @@ export default function SubmissionsPage() {
                       <TableCell>{p.title}</TableCell>
                       <TableCell><Chip label={p.status} size="small" color="primary" variant="outlined" /></TableCell>
                       <TableCell>{p.submissionDeadline ? new Date(p.submissionDeadline).toLocaleDateString() : 'No deadline'}</TableCell>
+                      <TableCell align="center">
+                        {submittedIds.has(p.id) ? (
+                          <Chip label="Submitted" size="small" color="success" icon={<Icon name="CheckCircle" />} />
+                        ) : (
+                          <Chip label="Not yet" size="small" variant="outlined" color="default" />
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
