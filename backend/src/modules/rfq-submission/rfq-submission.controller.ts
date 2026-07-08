@@ -75,9 +75,9 @@ export class RfqSubmissionController {
   }
 
   @Get('procurement/:procurementId')
-  @Roles(UserRole.PROCUREMENT, UserRole.ADMIN)
+  @Roles(UserRole.PROCUREMENT, UserRole.ADMIN, UserRole.EVALUATOR, UserRole.LEAD_EVALUATOR)
   @ApiOperation({
-    summary: 'Get submissions for procurement (procurement role)',
+    summary: 'Get submissions for procurement',
   })
   findByProcurement(@Param('procurementId') procurementId: string) {
     return this.submissionService.findByProcurement(procurementId);
