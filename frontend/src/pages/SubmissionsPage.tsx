@@ -52,12 +52,13 @@ export default function SubmissionsPage() {
 
   const handleSubmit = async () => {
     try {
-      await api.post('/rfq-submissions', {
+      const { data } = await api.post('/rfq-submissions', {
         procurementId: form.procurementId,
         price: parseFloat(form.price),
         proposalText: form.proposalText,
         fileIds: fileAttachments.map(a => a.id),
       });
+      if (data?.id) await api.put(`/rfq-submissions/${data.id}/submit`);
       setDialogOpen(false);
       setForm({ procurementId: '', price: '', proposalText: '' });
       setFileAttachments([]);
