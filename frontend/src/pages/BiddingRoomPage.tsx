@@ -59,8 +59,19 @@ export default function BiddingRoomPage() {
 
   const loadProcurements = async () => {
     try {
-      const res = await api.get('/procurements', { params: { limit: 50 } });
-      setProcurements(res.data.data || []);
+      const [procRes, invRes] = await Promise.all([
+        api.get('/procurements', { params: { limit: 50 } }),
+        api.get('/vendor-invitations/my').catch(() => ({ data: [] })),
+      ]);
+
+      let list = procRes.data.data || [];
+      if (user?.role === 'VENDOR') {
+        const acceptedIds = (invRes.data || [])
+          .filter((inv: any) => inv.invitationStatus === 'ACCEPTED')
+          .map((inv: any) => inv.procurementId);
+        list = list.filter((p: any) => acceptedIds.includes(p.id));
+      }
+      setProcurements(list);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed');
     }

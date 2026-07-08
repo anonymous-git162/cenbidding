@@ -45,7 +45,7 @@ export default function ResultsPage() {
       if (user?.role === 'VENDOR') {
         const invRes = await api.get('/vendor-invitations/my');
         const invitations = invRes.data || [];
-        const procIds = [...new Set(invitations.map((i: any) => i.procurementId))];
+        const procIds = [...new Set(invitations.filter((i: any) => i.invitationStatus === 'ACCEPTED').map((i: any) => i.procurementId))];
         if (procIds.length > 0) {
           const procRes = await api.get('/procurements', { params: { limit: 50 } });
           setItems((procRes.data.data || []).filter((p: any) => procIds.includes(p.id) && RESULT_STATUSES.includes(p.status)));
