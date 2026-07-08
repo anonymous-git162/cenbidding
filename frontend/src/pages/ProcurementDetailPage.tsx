@@ -86,6 +86,9 @@ export default function ProcurementDetailPage() {
       else if (action === 'announceAward') await api.post(`/procurements/${id}/award/announce`);
       else if (action === 'sendContract') await api.post(`/procurements/${id}/contract/send`);
       else if (action === 'completeProcurement') await api.post(`/procurements/${id}/award/complete`);
+      else if (action === 'startRfiCollection') await api.post(`/procurements/${id}/rfi/start-collection`);
+      else if (action === 'closeRfi') await api.post(`/procurements/${id}/rfi/close`);
+      else if (action === 'draftRfp') await api.post(`/procurements/${id}/rfp/draft`);
       else if (action === 'cancel') await api.post(`/procurements/${id}/cancel`, { reason: comment });
       setDialog(null);
       setComment('');
@@ -148,6 +151,15 @@ export default function ProcurementDetailPage() {
           )}
           {role === 'PROCUREMENT' && status === 'APPROVED' && (
             <Button variant="contained" startIcon={<Icon name="Publish" />} onClick={() => setDialog({ type: 'publish', title: 'Publish Request' })}>Publish</Button>
+          )}
+          {role === 'PROCUREMENT' && status === 'RFI_PUBLISHED' && (
+            <Button variant="contained" color="info" startIcon={<Icon name="Send" />} onClick={() => handleAction('startRfiCollection')}>Start Collecting Responses</Button>
+          )}
+          {role === 'PROCUREMENT' && status === 'RFI_COLLECTING' && (
+            <Button variant="contained" color="warning" startIcon={<Icon name="Send" />} onClick={() => handleAction('closeRfi')}>Close RFI Collection</Button>
+          )}
+          {role === 'PROCUREMENT' && status === 'RFI_CLOSED' && (
+            <Button variant="contained" color="primary" startIcon={<Icon name="Description" />} onClick={() => handleAction('draftRfp')}>Draft RFP</Button>
           )}
           {role === 'PROCUREMENT' && status === 'RETURNED_FROM_APPROVAL' && (
             <Button variant="contained" color="warning" startIcon={<Icon name="Send" />} onClick={() => handleAction('resubmitForApproval')}>Resubmit for Approval</Button>

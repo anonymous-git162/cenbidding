@@ -144,6 +144,13 @@ export class ProcurementsController {
     return this.procurementsService.cancel(id, req.user.id, dto.reason);
   }
 
+  @Post(':id/rfi/start-collection')
+  @Roles(UserRole.PROCUREMENT)
+  @ApiOperation({ summary: 'Start RFI collection period' })
+  startRfiCollection(@Param('id') id: string, @Request() req: any) {
+    return this.procurementsService.startRfiCollection(id, req.user.id);
+  }
+
   @Post(':id/rfi/close')
   @Roles(UserRole.PROCUREMENT)
   @ApiOperation({ summary: 'Close RFI collection period' })

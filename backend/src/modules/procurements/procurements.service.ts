@@ -391,6 +391,16 @@ export class ProcurementsService {
     );
   }
 
+  async startRfiCollection(id: string, userId: string) {
+    return this.transition(
+      id,
+      'RFI_COLLECTING',
+      'PROCUREMENT',
+      userId,
+      'PROCUREMENT',
+    );
+  }
+
   async closeRfi(id: string, userId: string) {
     return this.transition(
       id,
