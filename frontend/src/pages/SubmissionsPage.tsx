@@ -24,9 +24,19 @@ export default function SubmissionsPage() {
   const load = async () => {
     try {
       const statusFilter = user?.role === 'VENDOR' ? 'RFQ_OPEN,RFP_PUBLISHED,RFI_PUBLISHED' : 'RFQ_OPEN';
-      const res = await api.get('/procurements', { params: { status: statusFilter, limit: 50 } });
+      const [procRes, invRes] = await Promise.all([
+        api.get('/procurements', { params: { status: statusFilter, limit: 50 } }),
+        api.get('/vendor-invitations/my').catch(() => ({ data: [] })),
+      ]);
 
-      setProcurements(res.data.data || []);
+      let list = procRes.data.data || [];
+      if (user?.role === 'VENDOR') {
+        const acceptedIds = (invRes.data || [])
+          .filter((inv: any) => inv.invitationStatus === 'ACCEPTED')
+          .map((inv: any) => inv.procurementId);
+        list = list.filter((p: any) => acceptedIds.includes(p.id));
+      }
+      setProcurements(list);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed');
     } finally {
