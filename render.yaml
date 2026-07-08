@@ -10,6 +10,7 @@ services:
     startCommand: npx prisma db push && node dist/src/main.js
     healthCheckPath: /api/health
     autoDeployTrigger: commit
+    # ponytail: env vars with `value:` sync via Blueprint; `sync: false` set in Dashboard
     envVars:
       - key: NODE_ENV
         value: production
