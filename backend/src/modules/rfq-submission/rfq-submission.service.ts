@@ -102,7 +102,7 @@ export class RfqSubmissionService {
           select: { id: true, requestNo: true, title: true },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { updatedAt: 'desc' },
     });
   }
 }
