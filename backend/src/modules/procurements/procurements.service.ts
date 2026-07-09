@@ -378,6 +378,24 @@ export class ProcurementsService {
       updated,
     );
 
+    const acceptedVendors = await this.prisma.vendorInvitation.findMany({
+      where: { procurementId: id, invitationStatus: 'ACCEPTED' },
+      include: { vendor: { select: { userId: true } } },
+    });
+    const vendorUserIds = acceptedVendors
+      .map(inv => inv.vendor.userId)
+      .filter(uid => uid !== userId);
+    if (vendorUserIds.length > 0) {
+      await this.notificationsService.createForUsers(vendorUserIds, {
+        title: `${procurement.requestType} Published`,
+        message: `${procurement.requestType} ${procurement.requestNo} — ${procurement.title} is now open for submissions.`,
+        type: 'info',
+        entityType: 'Procurement',
+        entityId: id,
+        link: '/submissions',
+      });
+    }
+
     return updated;
   }
 
@@ -423,6 +441,24 @@ export class ProcurementsService {
       procurement,
       updated,
     );
+
+    const acceptedVendors = await this.prisma.vendorInvitation.findMany({
+      where: { procurementId: id, invitationStatus: 'ACCEPTED' },
+      include: { vendor: { select: { userId: true } } },
+    });
+    const vendorUserIds = acceptedVendors
+      .map(inv => inv.vendor.userId)
+      .filter(uid => uid !== userId);
+    if (vendorUserIds.length > 0) {
+      await this.notificationsService.createForUsers(vendorUserIds, {
+        title: 'RFP Published',
+        message: `RFP ${procurement.requestNo} — ${procurement.title} is now open for submissions.`,
+        type: 'info',
+        entityType: 'Procurement',
+        entityId: id,
+        link: '/submissions',
+      });
+    }
 
     return updated;
   }
