@@ -80,7 +80,14 @@ export class RfqSubmissionService {
       },
       select: { id: true },
     });
-    const userIds = [...new Set(procurementUsers.map(u => u.id))];
+    const evaluatorAssignments = await this.prisma.evaluatorAssignment.findMany({
+      where: { procurementId: submission.procurement.id },
+      select: { evaluatorId: true },
+    });
+    const userIds = [...new Set([
+      ...procurementUsers.map(u => u.id),
+      ...evaluatorAssignments.map(a => a.evaluatorId),
+    ])].filter(id => id !== vendorUserId);
     if (userIds.length > 0) {
       await this.notificationsService.createForUsers(userIds, {
         title: 'New Proposal Submitted',

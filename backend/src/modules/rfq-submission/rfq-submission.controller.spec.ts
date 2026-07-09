@@ -48,7 +48,7 @@ describe('RfqSubmissionController', () => {
     };
     service.create.mockResolvedValue({ id: 's-1' } as any);
     await controller.create(body, mockReq);
-    expect(service.create).toHaveBeenCalledWith('p-1', 'vendor-1', 1000, 'Proposal');
+    expect(service.create).toHaveBeenCalledWith('p-1', 'vendor-1', 1000, 'Proposal', undefined);
   });
 
   it('should update submission', async () => {
@@ -60,6 +60,7 @@ describe('RfqSubmissionController', () => {
       'user-1',
       1200,
       'Updated',
+      undefined,
     );
   });
 

@@ -4,10 +4,14 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class EvaluationService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   private computeWeightedScore(
     criteria: any[],
@@ -72,9 +76,19 @@ export class EvaluationService {
       ),
     );
 
-    await this.prisma.procurement.update({
+    const procurement = await this.prisma.procurement.update({
       where: { id: procurementId },
       data: { currentOwnerRole: 'EVALUATOR', status: 'EVALUATION' },
+      select: { title: true, requestNo: true },
+    });
+
+    await this.notificationsService.createForUsers(evaluatorIds, {
+      title: 'Evaluation Assigned',
+      message: `You have been assigned to evaluate ${procurement.requestNo} — ${procurement.title}`,
+      type: 'info',
+      entityType: 'Procurement',
+      entityId: procurementId,
+      link: `/procurements/${procurementId}`,
     });
 
     return assignments;

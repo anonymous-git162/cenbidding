@@ -2,11 +2,18 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { RfqSubmissionService } from './rfq-submission.service';
 import { PrismaService } from '../../database/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { mockPrisma, MockPrisma } from '../../../test/prisma-mock';
 
 describe('RfqSubmissionService', () => {
   let service: RfqSubmissionService;
   let prisma: MockPrisma;
+
+  const mockNotificationsService = {
+    create: jest.fn(),
+    createForUsers: jest.fn(),
+    setGateway: jest.fn(),
+  };
 
   beforeEach(async () => {
     prisma = mockPrisma();
@@ -15,6 +22,7 @@ describe('RfqSubmissionService', () => {
       providers: [
         RfqSubmissionService,
         { provide: PrismaService, useValue: prisma },
+        { provide: NotificationsService, useValue: mockNotificationsService },
       ],
     }).compile();
 
@@ -26,6 +34,7 @@ describe('RfqSubmissionService', () => {
       prisma.procurement.findUnique.mockResolvedValue({ id: 'p-1' } as any);
       const mockVendor = { id: 'v-1', userId: 'u-1' };
       prisma.vendor.findUnique.mockResolvedValue(mockVendor as any);
+      prisma.vendorInvitation.findFirst.mockResolvedValue({ id: 'inv-1' } as any);
       prisma.rfqSubmission.create.mockResolvedValue({
         id: 'sub-1',
         procurementId: 'p-1',
@@ -43,13 +52,21 @@ describe('RfqSubmissionService', () => {
     it('should submit a draft submission', async () => {
       prisma.rfqSubmission.findUnique.mockResolvedValue({
         id: 'sub-1',
-        vendor: { userId: 'u-1' },
+        vendor: { userId: 'u-1', companyName: 'Test Corp' },
         status: 'DRAFT',
+        procurement: {
+          id: 'p-1',
+          title: 'Test',
+          requestNo: 'REQ-001',
+          requesterId: 'requester-1',
+        },
       } as any);
       prisma.rfqSubmission.update.mockResolvedValue({
         id: 'sub-1',
         status: 'SUBMITTED',
       } as any);
+      prisma.user.findMany.mockResolvedValue([{ id: 'requester-1' }] as any);
+      prisma.evaluatorAssignment.findMany.mockResolvedValue([] as any);
 
       const result = await service.submit('sub-1', 'u-1');
       expect(result.status).toBe('SUBMITTED');
