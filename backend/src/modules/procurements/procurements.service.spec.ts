@@ -489,6 +489,7 @@ describe('ProcurementsService', () => {
         ...mockProcurement,
         status: 'EVALUATION',
       });
+      prisma.evaluatorReview.count.mockResolvedValue(3);
       prisma.procurement.update.mockResolvedValue({
         ...mockProcurement,
         status: 'PENDING_APPROVAL',

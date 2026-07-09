@@ -75,10 +75,25 @@ export default function ProcurementDetailPage() {
       if (action === 'resubmitForApproval') await api.post(`/procurements/${id}/approval/resubmit`);
       else if (action === 'submit') await api.post(`/procurements/${id}/submit`);
       else if (action === 'startReview') await api.post(`/procurements/${id}/review/start`);
-      else if (action === 'approve') await api.post(`/procurements/${id}/review/approve`, { comment });
-      else if (action === 'return') await api.post(`/procurements/${id}/review/return`, { reason: comment });
-      else if (action === 'reject') await api.post(`/procurements/${id}/review/reject`, { reason: comment });
-      else if (action === 'publish') await api.post(`/procurements/${id}/publish`, { submissionDeadline: deadline || undefined });
+      else if (action === 'approve') {
+        if (status === 'PENDING_APPROVAL') {
+          await api.post(`/approval/${id}/approve`, { comment });
+        } else {
+          await api.post(`/procurements/${id}/review/approve`, { comment });
+        }
+      } else if (action === 'return') {
+        if (status === 'PENDING_APPROVAL') {
+          await api.post(`/approval/${id}/return`, { reason: comment });
+        } else {
+          await api.post(`/procurements/${id}/review/return`, { reason: comment });
+        }
+      } else if (action === 'reject') {
+        if (status === 'PENDING_APPROVAL') {
+          await api.post(`/approval/${id}/reject`, { reason: comment });
+        } else {
+          await api.post(`/procurements/${id}/review/reject`, { reason: comment });
+        }
+      } else if (action === 'publish') await api.post(`/procurements/${id}/publish`, { submissionDeadline: deadline || undefined });
       else if (action === 'vendorResponse') await api.post(`/procurements/${id}/vendor-response/complete`);
       else if (action === 'startEbidding') await api.post(`/procurements/${id}/ebidding/start`);
       else if (action === 'completeEbidding') await api.post(`/procurements/${id}/ebidding/complete`);
@@ -186,7 +201,7 @@ export default function ProcurementDetailPage() {
           {role === 'PROCUREMENT' && status === 'VENDOR_RESPONSE_IN_PROGRESS' && (
             <Button variant="outlined" color="info" startIcon={<Icon name="CheckCircle" />} onClick={() => handleAction('completeEbidding')} sx={{ ml: 1 }}>Skip to Evaluation</Button>
           )}
-          {role === 'PROCUREMENT' && status === 'EVALUATION' && (
+          {(role === 'PROCUREMENT' || role === 'EVALUATOR' || role === 'LEAD_EVALUATOR') && status === 'EVALUATION' && (
             <Button variant="contained" color="info" startIcon={<Icon name="CheckCircle" />} onClick={() => handleAction('completeEvaluation')}>Complete Evaluation</Button>
           )}
           {(role === 'APPROVER' || role === 'ADMIN') && status === 'PENDING_APPROVAL' && (

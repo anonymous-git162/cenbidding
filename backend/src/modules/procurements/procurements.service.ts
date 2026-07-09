@@ -545,6 +545,15 @@ export class ProcurementsService {
       );
     }
 
+    const reviewCount = await this.prisma.evaluatorReview.count({
+      where: { procurementId: id },
+    });
+    if (reviewCount === 0) {
+      throw new BadRequestException(
+        'Cannot complete evaluation: no evaluator reviews have been submitted',
+      );
+    }
+
     const updated = await this.prisma.procurement.update({
       where: { id },
       data: {
