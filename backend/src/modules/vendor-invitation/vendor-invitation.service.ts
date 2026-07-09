@@ -62,7 +62,7 @@ export class VendorInvitationService {
         type: 'info',
         entityType: 'Procurement',
         entityId: procurementId,
-        link: '/vendor/invitations',
+        link: '/invitations',
       });
     }
 
