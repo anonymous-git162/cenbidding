@@ -242,8 +242,10 @@ export class ProcurementsService {
           select: {
             submissions: true,
             ebiddingRounds: true,
-            evaluatorAssignments: true,
           },
+        },
+        evaluatorAssignments: {
+          include: { evaluator: { select: { id: true, fullName: true, email: true, role: true } } },
         },
       },
     });

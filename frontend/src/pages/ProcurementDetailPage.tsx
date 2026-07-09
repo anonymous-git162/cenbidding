@@ -158,6 +158,8 @@ export default function ProcurementDetailPage() {
   const role = user?.role;
   const status = procurement.status;
   const stepIdx = getStepIndex(status);
+  const assignedIds = new Set((procurement.evaluatorAssignments || []).map((a: any) => a.evaluatorId));
+  const availableEvaluators = evaluators.filter((ev: any) => !assignedIds.has(ev.id));
   const typeColor = procurement.requestType === 'RFP' ? 'primary.main' : procurement.requestType === 'RFQ' ? 'warning.main' : 'text.secondary';
 
   return (
@@ -508,18 +510,45 @@ export default function ProcurementDetailPage() {
                     <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', mb: 2, bgcolor: 'grey.50' }}>
                       <CardContent sx={{ py: 2 }}>
                         <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>Assign Evaluators</Typography>
+                        {procurement.evaluatorAssignments && procurement.evaluatorAssignments.length > 0 && (
+                          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 1.5 }}>
+                            {procurement.evaluatorAssignments.map((a: any) => (
+                              <Chip
+                                key={a.id}
+                                label={`${a.evaluator?.fullName || 'Unknown'}${a.isLead ? ' (Lead)' : ''}`}
+                                color={a.isLead ? 'primary' : 'default'}
+                                onDelete={async () => {
+                                  const remaining = procurement.evaluatorAssignments
+                                    .filter((x: any) => x.evaluatorId !== a.evaluatorId)
+                                    .map((x: any) => x.evaluatorId);
+                                  const leadId = procurement.evaluatorAssignments.find((x: any) => x.isLead && x.evaluatorId !== a.evaluatorId)?.evaluatorId || remaining[0];
+                                  if (!remaining.length) {
+                                    setProcurement((prev: any) => ({ ...prev, evaluatorAssignments: [] }));
+                                    return;
+                                  }
+                                  try {
+                                    await api.post('/evaluation/assignments', { procurementId: id, evaluatorIds: remaining, leadEvaluatorId: leadId });
+                                    const res = await api.get(`/procurements/${id}`);
+                                    setProcurement(res.data);
+                                  } catch (err: any) { setError(err.response?.data?.message || 'Failed'); }
+                                }}
+                                size="small"
+                              />
+                            ))}
+                          </Box>
+                        )}
                         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                           <TextField
                             select
                             size="small"
-                            SelectProps={{ multiple: true, renderValue: (selected: any) => selected.map((id: string) => evaluators.find((e: any) => e.id === id)?.fullName || id).join(', ') }}
+                            SelectProps={{ multiple: true, renderValue: (selected: any) => selected.map((sid: string) => availableEvaluators.find((e: any) => e.id === sid)?.fullName || sid).join(', ') }}
                             value={selectedEvaluators}
                             onChange={(e) => setSelectedEvaluators(typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value as string[])}
                             sx={{ minWidth: 300 }}
                             onFocus={loadEvaluators}
-                            label="Select evaluators"
+                            label="Add evaluators"
                           >
-                            {evaluators.map((ev: any) => (
+                            {availableEvaluators.map((ev: any) => (
                               <MenuItem key={ev.id} value={ev.id}>
                                 {ev.fullName} ({ev.role})
                               </MenuItem>
@@ -536,7 +565,7 @@ export default function ProcurementDetailPage() {
                           </Button>
                         </Box>
                         <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                          First selected evaluator will be set as Lead Evaluator
+                          {procurement.evaluatorAssignments?.length || 0} evaluator(s) assigned. First in list is Lead Evaluator.
                         </Typography>
                       </CardContent>
                     </Card>
