@@ -6,7 +6,7 @@ import {
   Box, Grid, Card, CardContent, Typography, Button, Divider, TextField, Chip, List,
   ListItem, ListItemText, ListItemIcon, Paper, Dialog, DialogTitle, DialogContent,
   DialogActions, Tab, Tabs, Alert, LinearProgress, Avatar, Tooltip, CircularProgress,
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, MenuItem,
 } from '@mui/material';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -38,6 +38,9 @@ export default function ProcurementDetailPage() {
   const [error, setError] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [evaluators, setEvaluators] = useState<any[]>([]);
+  const [selectedEvaluators, setSelectedEvaluators] = useState<string[]>([]);
+  const [assignLoading, setAssignLoading] = useState(false);
 
   useEffect(() => { if (id) loadProcurement(); }, [id]);
 
@@ -65,6 +68,37 @@ export default function ProcurementDetailPage() {
       setError(err.response?.data?.message || 'Failed to load procurement');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadEvaluators = async () => {
+    try {
+      const [evRes, leadRes] = await Promise.all([
+        api.get('/users', { params: { role: 'EVALUATOR', limit: 50 } }),
+        api.get('/users', { params: { role: 'LEAD_EVALUATOR', limit: 50 } }),
+      ]);
+      const evs = evRes.data?.data || evRes.data || [];
+      const leads = leadRes.data?.data || leadRes.data || [];
+      setEvaluators([...leads, ...evs]);
+    } catch { /* ignore */ }
+  };
+
+  const handleAssignEvaluators = async () => {
+    if (!selectedEvaluators.length) return;
+    setAssignLoading(true);
+    try {
+      const leadId = selectedEvaluators[0];
+      await api.post('/evaluation/assignments', {
+        procurementId: id,
+        evaluatorIds: selectedEvaluators,
+        leadEvaluatorId: leadId,
+      });
+      setSelectedEvaluators([]);
+      loadProcurement();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to assign evaluators');
+    } finally {
+      setAssignLoading(false);
     }
   };
 
@@ -470,6 +504,44 @@ export default function ProcurementDetailPage() {
 
               {tab === 3 && (
                 <Box>
+                  {role === 'PROCUREMENT' && status === 'EVALUATION' && (
+                    <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', mb: 2, bgcolor: 'grey.50' }}>
+                      <CardContent sx={{ py: 2 }}>
+                        <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>Assign Evaluators</Typography>
+                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                          <TextField
+                            select
+                            size="small"
+                            SelectProps={{ multiple: true }}
+                            value={selectedEvaluators}
+                            onChange={(e) => setSelectedEvaluators(typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value as string[])}
+                            sx={{ minWidth: 300 }}
+                            onFocus={loadEvaluators}
+                            label="Select evaluators"
+                            slotProps={{ select: { renderValue: (selected: any) => selected.map((id: string) => evaluators.find((e: any) => e.id === id)?.fullName || id).join(', ') } }}
+                          >
+                            {evaluators.map((ev: any) => (
+                              <MenuItem key={ev.id} value={ev.id}>
+                                {ev.fullName} ({ev.role})
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                          <Button
+                            variant="contained"
+                            size="small"
+                            onClick={handleAssignEvaluators}
+                            disabled={!selectedEvaluators.length || assignLoading}
+                            startIcon={assignLoading ? <CircularProgress size={16} /> : <Icon name="Add" />}
+                          >
+                            Assign
+                          </Button>
+                        </Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                          First selected evaluator will be set as Lead Evaluator
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  )}
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                     <Typography variant="subtitle2" fontWeight={600} color="text.secondary">Evaluation Results</Typography>
                     {procurement.evaluations && procurement.evaluations.length > 0 && (
