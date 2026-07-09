@@ -144,10 +144,21 @@ export class RfqSubmissionService {
   }
 
   async findByProcurement(procurementId: string) {
-    return this.prisma.rfqSubmission.findMany({
+    const submissions = await this.prisma.rfqSubmission.findMany({
       where: { procurementId },
       include: { vendor: { select: { id: true, companyName: true } }, files: true },
     });
+
+    const lastRound = await this.prisma.ebiddingRound.findFirst({
+      where: { procurementId, status: 'CLOSED' },
+      orderBy: { roundNo: 'desc' },
+      include: { responses: true },
+    });
+
+    if (!lastRound) return submissions;
+
+    const bidMap = new Map(lastRound.responses.map(r => [r.vendorId, r.bidAmount]));
+    return submissions.map(sub => ({ ...sub, lastBid: bidMap.get(sub.vendorId) ?? null }));
   }
 
   async findMySubmission(procurementId: string, vendorUserId: string) {

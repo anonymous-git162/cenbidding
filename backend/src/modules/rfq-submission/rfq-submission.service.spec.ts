@@ -98,12 +98,28 @@ describe('RfqSubmissionService', () => {
   });
 
   describe('findByProcurement', () => {
-    it('should return submissions for a procurement', async () => {
-      const submissions = [{ id: 'sub-1', price: 50000 }];
-      prisma.rfqSubmission.findMany.mockResolvedValue(submissions as any);
+    it('should return submissions when no ebidding round exists', async () => {
+      prisma.rfqSubmission.findMany.mockResolvedValue([{ id: 'sub-1', vendorId: 'v-1', price: 50000 }] as any);
+      prisma.ebiddingRound.findFirst.mockResolvedValue(null);
 
       const result = await service.findByProcurement('p-1');
       expect(result).toHaveLength(1);
+      expect((result as any)[0].lastBid).toBeUndefined();
+    });
+
+    it('should include lastBid from closed ebidding round', async () => {
+      const vendorId = 'v-1';
+      prisma.rfqSubmission.findMany.mockResolvedValue([{ id: 'sub-1', vendorId, price: 50000 }] as any);
+      prisma.ebiddingRound.findFirst.mockResolvedValue({
+        id: 'round-1',
+        roundNo: 2,
+        status: 'CLOSED',
+        responses: [{ vendorId, bidAmount: 48000 }],
+      } as any);
+
+      const result: any[] = await service.findByProcurement('p-1') as any;
+      expect(result).toHaveLength(1);
+      expect(result[0].lastBid).toBe(48000);
     });
   });
 

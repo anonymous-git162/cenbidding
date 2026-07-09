@@ -122,7 +122,7 @@ export default function EvaluationPage() {
     if (submissions.length === 0) return;
     setAiLoading(vendorId);
     try {
-      const allPrices = submissions.map((s) => Number(s.price));
+      const allPrices = submissions.map((s) => Number(s.lastBid ?? s.price));
       const sub = submissions.find((s) => s.vendorId === vendorId);
       const res = await api.post('/ai/score-vendor', {
         vendorName,
@@ -270,7 +270,7 @@ export default function EvaluationPage() {
                               return (
                                 <TableRow key={sub.id}>
                                   <TableCell>{sub.vendor?.companyName || 'Unknown'}</TableCell>
-                                  <TableCell>${Number(sub.price).toLocaleString()}</TableCell>
+                                  <TableCell>${Number(sub.lastBid ?? sub.price).toLocaleString()}</TableCell>
                                   <TableCell>
                                     {criteria.length > 0 ? (
                                       <Box sx={{ minWidth: 250 }}>
@@ -313,7 +313,7 @@ export default function EvaluationPage() {
                                     <Box sx={{ display: 'flex', gap: 1 }}>
                                       <Button size="small" variant="outlined" color="secondary"
                                         startIcon={aiLoading === sub.vendorId ? <CircularProgress size={14} /> : <Icon name="Assessment" />}
-                                        onClick={() => aiScore(sub.vendorId, sub.vendor?.companyName || 'Unknown', Number(sub.price))}
+                                        onClick={() => aiScore(sub.vendorId, sub.vendor?.companyName || 'Unknown', Number(sub.lastBid ?? sub.price))}
                                         disabled={aiLoading !== null}>
                                         {aiLoading === sub.vendorId ? 'Scoring...' : 'AI Score'}
                                       </Button>

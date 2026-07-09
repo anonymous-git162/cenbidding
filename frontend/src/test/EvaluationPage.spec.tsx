@@ -91,13 +91,36 @@ describe('EvaluationPage', () => {
       return Promise.resolve({ data: [] });
     });
     renderPage();
-    await waitFor(() => {
-      expect(screen.getByLabelText('Select Procurement')).toBeInTheDocument();
-    });
-    await userEvent.selectOptions(screen.getByLabelText('Select Procurement'), mockProcurement.id);
+    await userEvent.click(screen.getByLabelText('Procurement'));
+    await userEvent.click(await screen.findByRole('option', { name: /Server Equipment/i }));
     await waitFor(() => {
       expect(screen.getByText('Tech Corp')).toBeInTheDocument();
     });
+  });
+
+  it('shows lastBid price over submission price', async () => {
+    (api.get as any).mockImplementation((url: string) => {
+      if (url === '/procurements') {
+        return Promise.resolve({ data: { data: [mockProcurement] } });
+      }
+      if (url === `/evaluation/reviews/${mockProcurement.id}`) {
+        return Promise.resolve({ data: [] });
+      }
+      if (url === `/rfq-submissions/procurement/${mockProcurement.id}`) {
+        return Promise.resolve({ data: [{ id: 's1', vendorId: 'v1', vendor: { companyName: 'Tech Corp' }, price: '50000', lastBid: '48000' }] });
+      }
+      if (url === `/evaluation/consolidation/${mockProcurement.id}`) {
+        return Promise.reject(new Error('Not found'));
+      }
+      return Promise.resolve({ data: [] });
+    });
+    renderPage();
+    await userEvent.click(screen.getByLabelText('Procurement'));
+    await userEvent.click(await screen.findByRole('option', { name: /Server Equipment/i }));
+    await waitFor(() => {
+      expect(screen.getByText('$48,000')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('$50,000')).not.toBeInTheDocument();
   });
 
   it('shows no submissions message when empty', async () => {
@@ -117,10 +140,8 @@ describe('EvaluationPage', () => {
       return Promise.resolve({ data: [] });
     });
     renderPage();
-    await waitFor(() => {
-      expect(screen.getByLabelText('Select Procurement')).toBeInTheDocument();
-    });
-    await userEvent.selectOptions(screen.getByLabelText('Select Procurement'), mockProcurement.id);
+    await userEvent.click(screen.getByLabelText('Procurement'));
+    await userEvent.click(await screen.findByRole('option', { name: /Server Equipment/i }));
     await waitFor(() => {
       expect(screen.getByText(/No vendor submissions to evaluate/)).toBeInTheDocument();
     });
@@ -143,10 +164,8 @@ describe('EvaluationPage', () => {
       return Promise.resolve({ data: [] });
     });
     renderPage();
-    await waitFor(() => {
-      expect(screen.getByLabelText('Select Procurement')).toBeInTheDocument();
-    });
-    await userEvent.selectOptions(screen.getByLabelText('Select Procurement'), mockProcurement.id);
+    await userEvent.click(screen.getByLabelText('Procurement'));
+    await userEvent.click(await screen.findByRole('option', { name: /Server Equipment/i }));
     const reviewsTab = screen.getByText('Reviews (1)');
     await userEvent.click(reviewsTab);
     await waitFor(() => {
@@ -171,10 +190,8 @@ describe('EvaluationPage', () => {
       return Promise.resolve({ data: [] });
     });
     renderPage();
-    await waitFor(() => {
-      expect(screen.getByLabelText('Select Procurement')).toBeInTheDocument();
-    });
-    await userEvent.selectOptions(screen.getByLabelText('Select Procurement'), mockProcurement.id);
+    await userEvent.click(screen.getByLabelText('Procurement'));
+    await userEvent.click(await screen.findByRole('option', { name: /Server Equipment/i }));
     await waitFor(() => {
       expect(screen.getByText('AI Score')).toBeInTheDocument();
     });
@@ -191,10 +208,8 @@ describe('EvaluationPage', () => {
       return Promise.resolve({ data: [] });
     });
     renderPage();
-    await waitFor(() => {
-      expect(screen.getByLabelText('Select Procurement')).toBeInTheDocument();
-    });
-    await userEvent.selectOptions(screen.getByLabelText('Select Procurement'), mockProcurement.id);
+    await userEvent.click(screen.getByLabelText('Procurement'));
+    await userEvent.click(await screen.findByRole('option', { name: /Server Equipment/i }));
     await waitFor(() => {
       expect(screen.getByText(/Criteria/)).toBeInTheDocument();
     });
