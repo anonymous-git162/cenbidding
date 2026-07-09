@@ -52,7 +52,12 @@ export default function EvaluationPage() {
       setReviews(existingReviews);
       setSubmissions(subsRes.data || []);
       setConsolidation(consRes.data);
-      setCriteria(c);
+      setCriteria(c.length ? c : [
+        { name: 'Price Criteria', weight: 40, maxScore: 100 },
+        { name: 'Technical & Quality Criteria', weight: 40, maxScore: 100 },
+        { name: 'Service & Delivery Criteria', weight: 10, maxScore: 100 },
+        { name: 'Qualifications & Experience Criteria', weight: 10, maxScore: 100 },
+      ]);
       const seeded: Record<string, { score: number; comment: string; criterionScores?: { criteriaIndex: number; score: number }[] }> = {};
       for (const r of existingReviews) {
         seeded[r.vendorId] = { score: r.score, comment: r.comment || '', criterionScores: r.criterionScores || undefined };
