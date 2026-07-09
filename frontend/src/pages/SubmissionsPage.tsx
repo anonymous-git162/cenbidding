@@ -88,11 +88,11 @@ export default function SubmissionsPage() {
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><LinearProgress sx={{ width: '100%', borderRadius: 1 }} /></Box>
       ) : procurements.length === 0 ? (
-        <Card><CardContent><Typography color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>No open RFQs available for submission</Typography></CardContent></Card>
+        <Card><CardContent><Typography color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>No open procurements available</Typography></CardContent></Card>
       ) : (
         <Card>
           <CardContent>
-            <Typography variant="h6" sx={{ mb: 2 }}>Open RFQs</Typography>
+            <Typography variant="h6" sx={{ mb: 2 }}>Open Procurements</Typography>
             <TableContainer>
               <Table>
                 <TableHead>
@@ -114,7 +114,7 @@ export default function SubmissionsPage() {
                       <TableCell>{p.requestNo}</TableCell>
                       <TableCell>{p.title}</TableCell>
                       <TableCell><Chip label={p.status} size="small" color="primary" variant="outlined" /></TableCell>
-                      <TableCell>{p.submissionDeadline ? new Date(p.submissionDeadline).toLocaleDateString() : 'No deadline'}</TableCell>
+                      <TableCell>{p.submissionDeadline ? new Date(p.submissionDeadline).toLocaleString() : 'No deadline'}</TableCell>
                       <TableCell align="center">
                         {submittedIds.has(p.id) ? (
                           <Chip label="Submitted" size="small" color="success" icon={<Icon name="CheckCircle" />} />
@@ -144,7 +144,7 @@ export default function SubmissionsPage() {
         <DialogContent>
           <TextField select fullWidth label="Procurement" value={form.procurementId} onChange={(e) => setForm({ ...form, procurementId: e.target.value })} SelectProps={{ native: true }} sx={{ mt: 1, mb: 2 }}>
             <option value="">Select...</option>
-            {procurements.map((p) => <option key={p.id} value={p.id}>{p.requestNo} - {p.title}</option>)}
+            {procurements.map((p) => <option key={p.id} value={p.id}>{p.requestNo} - {p.title}{p.submissionDeadline ? ` (Deadline: ${new Date(p.submissionDeadline).toLocaleDateString()})` : ''}</option>)}
           </TextField>
           <TextField fullWidth type="number" label="Price ($)" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} sx={{ mb: 2 }} />
           <TextField fullWidth multiline rows={4} label="Proposal" value={form.proposalText} onChange={(e) => setForm({ ...form, proposalText: e.target.value })} sx={{ mb: 2 }} />

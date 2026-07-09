@@ -26,6 +26,14 @@ const mockItems = [
   { id: '2', requestNo: 'RFQ-002', title: 'IT Equipment', status: 'RFQ_OPEN', submissionDeadline: '2025-02-20T00:00:00Z' },
 ];
 
+function mockApiGet(procurements: any[], invitations: any[], submissions: any[]) {
+  (api.get as any)
+    .mockReset()
+    .mockResolvedValueOnce({ data: { data: procurements } })
+    .mockResolvedValueOnce({ data: invitations })
+    .mockResolvedValueOnce({ data: submissions });
+}
+
 function renderPage() {
   return render(
     <MemoryRouter>
@@ -40,17 +48,18 @@ describe('SubmissionsPage', () => {
     (useAuth as any).mockReturnValue({
       user: { id: '1', role: 'VENDOR' },
     });
-    (api.get as any).mockResolvedValue({ data: { data: mockItems } });
   });
 
   it('renders submissions heading', async () => {
+    mockApiGet(mockItems, [{ invitationStatus: 'ACCEPTED', procurementId: '1' }, { invitationStatus: 'ACCEPTED', procurementId: '2' }], []);
     renderPage();
     await waitFor(() => {
       expect(screen.getByText('Submissions')).toBeInTheDocument();
     });
   });
 
-  it('renders open RFQs in the table', async () => {
+  it('renders open procurements in the table', async () => {
+    mockApiGet(mockItems, [{ invitationStatus: 'ACCEPTED', procurementId: '1' }, { invitationStatus: 'ACCEPTED', procurementId: '2' }], []);
     renderPage();
     await waitFor(() => {
       expect(screen.getByText('Office Supplies')).toBeInTheDocument();
@@ -58,21 +67,22 @@ describe('SubmissionsPage', () => {
     });
   });
 
-  it('shows empty state when no open RFQs', async () => {
-    (api.get as any).mockResolvedValue({ data: { data: [] } });
+  it('shows empty state when no open procurements', async () => {
+    mockApiGet([], [], []);
     renderPage();
     await waitFor(() => {
-      expect(screen.getByText('No open RFQs available for submission')).toBeInTheDocument();
+      expect(screen.getByText('No open procurements available')).toBeInTheDocument();
     });
   });
 
   it('shows loading state initially', () => {
-    (api.get as any).mockResolvedValue(new Promise(() => {}));
+    (api.get as any).mockReset().mockResolvedValue(new Promise(() => {}));
     renderPage();
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 
   it('opens new submission dialog on button click', async () => {
+    mockApiGet(mockItems, [{ invitationStatus: 'ACCEPTED', procurementId: '1' }, { invitationStatus: 'ACCEPTED', procurementId: '2' }], []);
     renderPage();
     await waitFor(() => {
       expect(screen.getByText('New Submission')).toBeInTheDocument();
@@ -84,7 +94,11 @@ describe('SubmissionsPage', () => {
   });
 
   it('shows error on API failure', async () => {
-    (api.get as any).mockRejectedValue({ response: { data: { message: 'Failed to load submissions' } } });
+    (api.get as any)
+      .mockReset()
+      .mockRejectedValueOnce({ response: { data: { message: 'Failed to load submissions' } } })
+      .mockRejectedValueOnce({ response: { data: { message: '' } } })
+      .mockRejectedValueOnce({ response: { data: { message: '' } } });
     renderPage();
     await waitFor(() => {
       expect(screen.getByText('Failed to load submissions')).toBeInTheDocument();
