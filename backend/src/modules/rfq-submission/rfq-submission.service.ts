@@ -4,10 +4,14 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class RfqSubmissionService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   async create(
     procurementId: string,
@@ -48,7 +52,12 @@ export class RfqSubmissionService {
   async submit(id: string, vendorUserId: string) {
     const submission = await this.prisma.rfqSubmission.findUnique({
       where: { id },
-      include: { vendor: true },
+      include: {
+        vendor: true,
+        procurement: {
+          select: { id: true, title: true, requestNo: true, requesterId: true },
+        },
+      },
     });
     if (!submission) throw new NotFoundException('Submission not found');
     if (submission.vendor.userId !== vendorUserId)
@@ -56,10 +65,34 @@ export class RfqSubmissionService {
     if (submission.status === 'SUBMITTED')
       throw new BadRequestException('Already submitted');
 
-    return this.prisma.rfqSubmission.update({
+    const updated = await this.prisma.rfqSubmission.update({
       where: { id },
       data: { status: 'SUBMITTED', submittedAt: new Date() },
     });
+
+    const procurementUsers = await this.prisma.user.findMany({
+      where: {
+        OR: [
+          { id: submission.procurement.requesterId },
+          { role: 'PROCUREMENT', isActive: true },
+        ],
+        id: { not: vendorUserId },
+      },
+      select: { id: true },
+    });
+    const userIds = [...new Set(procurementUsers.map(u => u.id))];
+    if (userIds.length > 0) {
+      await this.notificationsService.createForUsers(userIds, {
+        title: 'New Proposal Submitted',
+        message: `${submission.vendor.companyName} submitted a proposal for ${submission.procurement.requestNo} — ${submission.procurement.title}`,
+        type: 'info',
+        entityType: 'Submission',
+        entityId: id,
+        link: `/procurements/${submission.procurement.id}`,
+      });
+    }
+
+    return updated;
   }
 
   async update(
