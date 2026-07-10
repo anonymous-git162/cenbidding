@@ -704,13 +704,30 @@ export class ProcurementsService {
     if (procurement.status !== 'AWARD_ANNOUNCED')
       throw new BadRequestException('Must be AWARD_ANNOUNCED to send contract');
 
+    const result = await this.prisma.procurementResult.findUnique({
+      where: { procurementId: id },
+      include: { winningVendor: { select: { userId: true, companyName: true } } },
+    });
+
     await this.prisma.procurementResult.update({
       where: { procurementId: id },
       data: { contractSentAt: new Date() },
     });
 
     await this.appendTimeline(id, 'CONTRACT_SENT', 'PROCUREMENT', userId, {});
-    return { message: 'Contract sent' };
+
+    if (result?.winningVendor?.userId) {
+      await this.notificationsService.createForUsers([result.winningVendor.userId], {
+        title: 'Contract Ready',
+        message: `The contract for "${procurement.title || procurement.requestNo}" has been prepared. Please review and sign.`,
+        type: 'info',
+        entityType: 'Procurement',
+        entityId: id,
+        link: `/procurements/${id}`,
+      });
+    }
+
+    return { message: 'Contract sent and vendor notified' };
   }
 
   async completeProcurement(id: string, userId: string) {
