@@ -2,14 +2,12 @@ import { Controller, Get, Param, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
-import { Roles } from '../../common/decorators/roles.decorator';
 import { PdfService } from './pdf.service';
 import { PrismaService } from '../../database/prisma.service';
 
 @ApiTags('PDF Export')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('pdf')
 export class PdfController {
   constructor(
@@ -18,7 +16,6 @@ export class PdfController {
   ) {}
 
   @Get('tor/:procurementId')
-  @Roles('PROCUREMENT', 'ADMIN', 'REQUESTER', 'APPROVER')
   @ApiOperation({ summary: 'Export TOR as PDF' })
   async exportTor(@Param('procurementId') id: string, @Res() res: Response) {
     const procurement = await this.prisma.procurement.findUnique({
@@ -33,7 +30,6 @@ export class PdfController {
   }
 
   @Get('result/:procurementId')
-  @Roles('PROCUREMENT', 'ADMIN', 'APPROVER')
   @ApiOperation({ summary: 'Export result as PDF' })
   async exportResult(@Param('procurementId') id: string, @Res() res: Response) {
     const procurement = await this.prisma.procurement.findUnique({
@@ -52,7 +48,6 @@ export class PdfController {
   }
 
   @Get('contract/:procurementId')
-  @Roles('PROCUREMENT', 'ADMIN', 'APPROVER')
   @ApiOperation({ summary: 'Export contract as PDF' })
   async exportContract(
     @Param('procurementId') id: string,
@@ -80,7 +75,6 @@ export class PdfController {
   }
 
   @Get('evaluation/:procurementId')
-  @Roles('PROCUREMENT', 'ADMIN', 'APPROVER', 'EVALUATOR', 'LEAD_EVALUATOR')
   @ApiOperation({ summary: 'Export evaluation as PDF' })
   async exportEvaluation(
     @Param('procurementId') id: string,
