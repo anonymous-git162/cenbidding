@@ -577,7 +577,7 @@ describe('ProcurementsService', () => {
       prisma.procurementResult.update.mockResolvedValue({} as any);
 
       const result = await service.sendContract('proc-1', 'user-1');
-      expect(result).toHaveProperty('message', 'Contract sent');
+      expect(result).toHaveProperty('message', 'Contract sent and vendor notified');
     });
 
     it('should throw on sendContract if not AWARD_ANNOUNCED', async () => {

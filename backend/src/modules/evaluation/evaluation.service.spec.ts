@@ -108,11 +108,26 @@ describe('EvaluationService', () => {
       expect(result.score).toBe(90);
     });
 
-    it('should throw if evaluator not assigned', async () => {
+    it('should throw if not assigned and not a valid evaluator', async () => {
       prisma.evaluatorAssignment.findFirst.mockResolvedValue(null);
+      prisma.user.findUnique.mockResolvedValue(null);
       await expect(
         service.submitReview('eval-1', 'proc-1', 'vendor-1', 85),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should auto-assign evaluator on first submit when unassigned', async () => {
+      prisma.evaluatorAssignment.findFirst.mockResolvedValue(null);
+      prisma.user.findUnique.mockResolvedValue({ role: 'EVALUATOR', isActive: true });
+      prisma.evaluatorAssignment.create.mockResolvedValue({ id: 'assign-1' });
+      prisma.evaluatorReview.findFirst.mockResolvedValue(null);
+      prisma.evaluatorReview.create.mockResolvedValue(mockReview);
+
+      const result = await service.submitReview('eval-1', 'proc-1', 'vendor-1', 85);
+      expect(prisma.evaluatorAssignment.create).toHaveBeenCalledWith({
+        data: { procurementId: 'proc-1', evaluatorId: 'eval-1', isLead: false },
+      });
+      expect(result.score).toBe(85);
     });
   });
 

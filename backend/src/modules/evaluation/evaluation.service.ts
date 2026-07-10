@@ -123,10 +123,17 @@ export class EvaluationService {
     const assignment = await this.prisma.evaluatorAssignment.findFirst({
       where: { procurementId, evaluatorId },
     });
-    if (!assignment)
-      throw new BadRequestException(
-        'Evaluator not assigned to this procurement',
-      );
+    if (!assignment) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: evaluatorId },
+        select: { role: true, isActive: true },
+      });
+      if (!user || !['EVALUATOR', 'LEAD_EVALUATOR'].includes(user.role) || !user.isActive)
+        throw new BadRequestException('Evaluator not assigned to this procurement');
+      await this.prisma.evaluatorAssignment.create({
+        data: { procurementId, evaluatorId, isLead: user.role === 'LEAD_EVALUATOR' },
+      });
+    }
 
     let finalScore = score;
     if (criterionScores?.length) {
