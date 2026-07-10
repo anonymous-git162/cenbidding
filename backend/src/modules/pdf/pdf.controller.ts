@@ -18,7 +18,7 @@ export class PdfController {
   ) {}
 
   @Get('tor/:procurementId')
-  @Roles('PROCUREMENT', 'ADMIN', 'REQUESTER')
+  @Roles('PROCUREMENT', 'ADMIN', 'REQUESTER', 'APPROVER')
   @ApiOperation({ summary: 'Export TOR as PDF' })
   async exportTor(@Param('procurementId') id: string, @Res() res: Response) {
     const procurement = await this.prisma.procurement.findUnique({
@@ -33,7 +33,7 @@ export class PdfController {
   }
 
   @Get('result/:procurementId')
-  @Roles('PROCUREMENT', 'ADMIN')
+  @Roles('PROCUREMENT', 'ADMIN', 'APPROVER')
   @ApiOperation({ summary: 'Export result as PDF' })
   async exportResult(@Param('procurementId') id: string, @Res() res: Response) {
     const procurement = await this.prisma.procurement.findUnique({
@@ -52,7 +52,7 @@ export class PdfController {
   }
 
   @Get('contract/:procurementId')
-  @Roles('PROCUREMENT', 'ADMIN')
+  @Roles('PROCUREMENT', 'ADMIN', 'APPROVER')
   @ApiOperation({ summary: 'Export contract as PDF' })
   async exportContract(
     @Param('procurementId') id: string,
@@ -80,7 +80,7 @@ export class PdfController {
   }
 
   @Get('evaluation/:procurementId')
-  @Roles('PROCUREMENT', 'ADMIN', 'EVALUATOR', 'LEAD_EVALUATOR')
+  @Roles('PROCUREMENT', 'ADMIN', 'APPROVER', 'EVALUATOR', 'LEAD_EVALUATOR')
   @ApiOperation({ summary: 'Export evaluation as PDF' })
   async exportEvaluation(
     @Param('procurementId') id: string,
