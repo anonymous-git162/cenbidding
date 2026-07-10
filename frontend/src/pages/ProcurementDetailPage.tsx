@@ -751,7 +751,6 @@ export default function ProcurementDetailPage() {
               <Alert severity="info" sx={{ mb: 2, borderRadius: 1 }}>By signing, you confirm agreement to the contract terms for this procurement.</Alert>
               <Typography variant="body2" color="text.secondary">Procurement: {procurement.requestNo} — {procurement.title}</Typography>
             </Box>
-            <TextField fullWidth multiline rows={3} label="Comment (optional)" value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Add any notes about this approval..." />
           ) : (
             <Box>
               <Alert severity={dialog?.type === 'reject' ? 'error' : 'warning'} sx={{ mb: 2, borderRadius: 1 }}>
