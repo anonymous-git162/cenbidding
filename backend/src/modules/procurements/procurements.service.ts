@@ -730,6 +730,43 @@ export class ProcurementsService {
     return { message: 'Contract sent and vendor notified' };
   }
 
+  async signContract(id: string, vendorUserId: string) {
+    const procurement = await this.prisma.procurement.findUnique({ where: { id } });
+    if (!procurement) throw new NotFoundException('Procurement not found');
+    if (procurement.status !== 'AWARD_ANNOUNCED')
+      throw new BadRequestException('Contract not yet sent');
+
+    const result = await this.prisma.procurementResult.findUnique({
+      where: { procurementId: id },
+    });
+    if (!result?.winningVendorId)
+      throw new BadRequestException('No winning vendor assigned');
+
+    const vendor = await this.prisma.vendor.findUnique({
+      where: { userId: vendorUserId },
+    });
+    if (!vendor || vendor.id !== result.winningVendorId)
+      throw new BadRequestException('Only the winning vendor can sign the contract');
+
+    await this.prisma.procurementResult.update({
+      where: { procurementId: id },
+      data: { contractSignedAt: new Date() },
+    });
+
+    await this.appendTimeline(id, 'CONTRACT_SIGNED', 'VENDOR', vendorUserId, {});
+
+    await this.notificationsService.createForUsers([procurement.requesterId], {
+      title: 'Contract Signed',
+      message: `${vendor.companyName} has signed the contract for "${procurement.title || procurement.requestNo}".`,
+      type: 'success',
+      entityType: 'Procurement',
+      entityId: id,
+      link: `/procurements/${id}`,
+    });
+
+    return { message: 'Contract signed successfully' };
+  }
+
   async completeProcurement(id: string, userId: string) {
     return this.transition(id, 'COMPLETED', 'PROCUREMENT', userId, 'CLOSED');
   }

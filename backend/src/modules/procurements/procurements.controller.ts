@@ -259,6 +259,13 @@ export class ProcurementsController {
     return this.procurementsService.sendContract(id, req.user.id);
   }
 
+  @Post(':id/contract/sign')
+  @Roles(UserRole.VENDOR)
+  @ApiOperation({ summary: 'Vendor signs the contract' })
+  signContract(@Param('id') id: string, @Request() req: any) {
+    return this.procurementsService.signContract(id, req.user.id);
+  }
+
   @Delete(':id')
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Delete a procurement (admin only)' })

@@ -139,6 +139,7 @@ export default function ProcurementDetailPage() {
         await api.post(`/procurements/${id}/award/announce`, { winningVendorId, announcementText });
       }
       else if (action === 'sendContract') await api.post(`/procurements/${id}/contract/send`);
+      else if (action === 'signContract') await api.post(`/procurements/${id}/contract/sign`);
       else if (action === 'completeProcurement') await api.post(`/procurements/${id}/award/complete`);
       else if (action === 'startRfiCollection') await api.post(`/procurements/${id}/rfi/start-collection`);
       else if (action === 'closeRfi') await api.post(`/procurements/${id}/rfi/close`);
@@ -265,6 +266,12 @@ export default function ProcurementDetailPage() {
           )}
           {role === 'PROCUREMENT' && status === 'AWARD_ANNOUNCED' && (
             <Button variant="contained" color="warning" startIcon={<Icon name="Description" />} onClick={() => handleAction('sendContract')}>Send Contract</Button>
+          )}
+          {role === 'VENDOR' && status === 'AWARD_ANNOUNCED' && (procurement as any).result?.contractSentAt && !(procurement as any).result?.contractSignedAt && (
+            <Button variant="contained" color="success" startIcon={<Icon name="CheckCircle" />} onClick={() => setDialog({ type: 'signContract', title: 'Sign Contract' })}>Sign Contract</Button>
+          )}
+          {role === 'VENDOR' && status === 'AWARD_ANNOUNCED' && (procurement as any).result?.contractSignedAt && (
+            <Chip label="Contract Signed" color="success" icon={<Icon name="CheckCircle" />} />
           )}
           {(role === 'PROCUREMENT' || role === 'APPROVER' || role === 'ADMIN') && status === 'AWARD_ANNOUNCED' && (
             <Button variant="contained" color="success" startIcon={<Icon name="CheckCircle" />} onClick={() => handleAction('completeProcurement')}>Complete</Button>
@@ -739,7 +746,11 @@ export default function ProcurementDetailPage() {
               </TextField>
               <TextField fullWidth multiline rows={3} label="Announcement Text" value={(dialog as any).announcementText || ''} onChange={(e) => setDialog(prev => prev ? { ...prev, announcementText: e.target.value } as any : null)} placeholder="Add announcement details..." />
             </Box>
-          ) : dialog?.type === 'approve' ? (
+          ) : dialog?.type === 'signContract' ? (
+            <Box>
+              <Alert severity="info" sx={{ mb: 2, borderRadius: 1 }}>By signing, you confirm agreement to the contract terms for this procurement.</Alert>
+              <Typography variant="body2" color="text.secondary">Procurement: {procurement.requestNo} — {procurement.title}</Typography>
+            </Box>
             <TextField fullWidth multiline rows={3} label="Comment (optional)" value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Add any notes about this approval..." />
           ) : (
             <Box>
@@ -753,11 +764,11 @@ export default function ProcurementDetailPage() {
         <DialogActions sx={{ px: 3, py: 2 }}>
           <Button onClick={() => setDialog(null)} disabled={actionLoading}>Cancel</Button>
           <Button
-            variant="contained" onClick={() => handleAction(dialog!.type)} disabled={actionLoading || (dialog?.type === 'publish' && (!deadline || new Date(deadline) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000))) || (dialog?.type !== 'approve' && dialog?.type !== 'publish' && dialog?.type !== 'reassign' && dialog?.type !== 'announce' && !comment) || (dialog?.type === 'reassign' && !(dialog as any)?.approverId) || (dialog?.type === 'announce' && !(dialog as any)?.winningVendorId)}
+            variant="contained" onClick={() => handleAction(dialog!.type)} disabled={actionLoading || (dialog?.type === 'publish' && (!deadline || new Date(deadline) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000))) || (dialog?.type !== 'approve' && dialog?.type !== 'publish' && dialog?.type !== 'reassign' && dialog?.type !== 'announce' && dialog?.type !== 'signContract' && !comment) || (dialog?.type === 'reassign' && !(dialog as any)?.approverId) || (dialog?.type === 'announce' && !(dialog as any)?.winningVendorId)}
             color={dialog?.type === 'reject' ? 'error' : dialog?.type === 'approve' ? 'success' : 'primary'}
             startIcon={actionLoading ? <CircularProgress size={16} color="inherit" /> : null}
           >
-            {actionLoading ? 'Processing...' : dialog?.type === 'approve' ? 'Approve' : dialog?.type === 'reject' ? 'Reject' : dialog?.type === 'publish' ? 'Publish' : dialog?.type === 'announce' ? 'Announce' : 'Confirm'}
+            {actionLoading ? 'Processing...' : dialog?.type === 'approve' ? 'Approve' : dialog?.type === 'reject' ? 'Reject' : dialog?.type === 'publish' ? 'Publish' : dialog?.type === 'announce' ? 'Announce' : dialog?.type === 'signContract' ? 'Sign Contract' : 'Confirm'}
           </Button>
         </DialogActions>
       </Dialog>
