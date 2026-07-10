@@ -29,7 +29,7 @@ const ROLE_ROUTES: Record<string, string[]> = {
   LEAD_EVALUATOR: ['dashboard', 'procurements', 'evaluation', 'results'],
   EVALUATOR: ['dashboard', 'procurements', 'evaluation', 'results'],
   PROCUREMENT: ['dashboard', 'procurements', 'vendors', 'invitations', 'audit', 'reporting', 'bidding', 'approvals', 'results', 'evaluation'],
-  VENDOR: ['dashboard', 'submissions', 'bidding', 'results', 'analytics', 'invitations'],
+  VENDOR: ['dashboard', 'submissions', 'bidding', 'results', 'analytics', 'invitations', 'procurements'],
   REQUESTER: ['dashboard', 'procurements'],
 };
 
