@@ -310,7 +310,7 @@ export default function EvaluationPage() {
                                     <Chip label={weighted} size="small" color={weighted >= 80 ? 'success' : weighted >= 60 ? 'warning' : 'error'} />
                                   </TableCell>
                                   <TableCell>
-                                    <TextField size="small" multiline rows={3} placeholder="Add comment..."
+                                    <TextField size="small" multiline rows={5} placeholder="Add comment..."
                                       value={s.comment || ''}
                                       onChange={(e) => setScores({ ...scores, [sub.vendorId]: { ...s, comment: e.target.value } })} />
                                   </TableCell>
