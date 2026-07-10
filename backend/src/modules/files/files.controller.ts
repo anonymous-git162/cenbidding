@@ -74,7 +74,7 @@ export class FilesController {
 
       fs.createReadStream(file.storagePath).pipe(res);
     } else {
-      res.status(404).json({ message: 'File not found on disk' });
+      res.status(404).json({ message: 'File no longer available (was stored locally, lost on redeploy). Please re-upload.' });
     }
   }
 
