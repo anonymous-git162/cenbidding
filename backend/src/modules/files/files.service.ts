@@ -88,7 +88,7 @@ export class FilesService {
   async getFile(id: string, userId?: string, userRole?: string) {
     const file = await this.prisma.file.findUnique({ where: { id } });
     if (!file) return null;
-    if (userId && file.uploadedBy !== userId && userRole !== 'PROCUREMENT' && userRole !== 'ADMIN') return null;
+    if (userId && file.uploadedBy !== userId && !['PROCUREMENT', 'ADMIN', 'APPROVER', 'EVALUATOR', 'LEAD_EVALUATOR'].includes(userRole || '')) return null;
     return file;
   }
 
