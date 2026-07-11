@@ -23,8 +23,6 @@ describe('HealthService', () => {
 
       const result = await service.check();
       expect(result.status).toBe('ok');
-      expect(result.services.database).toBe('healthy');
-      expect(result).toHaveProperty('timestamp');
     });
 
     it('should return error when database query fails', async () => {
@@ -32,7 +30,6 @@ describe('HealthService', () => {
 
       const result = await service.check();
       expect(result.status).toBe('error');
-      expect(result.services.database).toBe('unhealthy');
     });
   });
 });

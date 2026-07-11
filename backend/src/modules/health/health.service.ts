@@ -15,19 +15,10 @@ export class HealthService {
       dbStatus = 'unhealthy';
     }
 
-    return {
-      status: dbStatus === 'healthy' ? 'ok' : 'error',
-      uptime: Math.floor((Date.now() - this.startTime) / 1000),
-      timestamp: new Date().toISOString(),
-      services: { database: dbStatus },
-    };
+    return { status: dbStatus === 'healthy' ? 'ok' : 'error' };
   }
 
   live() {
-    return {
-      status: 'ok',
-      uptime: Math.floor((Date.now() - this.startTime) / 1000),
-      timestamp: new Date().toISOString(),
-    };
+    return { status: 'ok' };
   }
 }

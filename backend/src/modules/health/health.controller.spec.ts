@@ -20,7 +20,7 @@ describe('HealthController', () => {
   });
 
   it('should check health', async () => {
-    const expected = { status: 'ok', timestamp: new Date().toISOString() };
+    const expected = { status: 'ok' };
     service.check.mockResolvedValue(expected as any);
     const result = await controller.check();
     expect(service.check).toHaveBeenCalled();
