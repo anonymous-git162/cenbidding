@@ -284,7 +284,7 @@ export default function InvitationsPage() {
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" color="text.secondary">
-                        {inv.deadline ? new Date(inv.deadline).toLocaleDateString() : 'Not set'}
+                        {(inv.deadline || inv.procurement?.submissionDeadline) ? new Date(inv.deadline || inv.procurement?.submissionDeadline).toLocaleDateString() : 'Not set'}
                       </Typography>
                     </TableCell>
                     <TableCell align="right">
