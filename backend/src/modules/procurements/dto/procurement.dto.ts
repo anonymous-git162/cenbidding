@@ -5,6 +5,7 @@ import {
   IsNumber,
   IsDateString,
   MinLength,
+  MaxLength,
   IsArray,
   Min,
 } from 'class-validator';
@@ -198,4 +199,20 @@ export class FinalDecisionDto {
   @IsString()
   @IsOptional()
   finalDecisionReason?: string;
+}
+
+export class ReassignApproverDto {
+  @IsString()
+  approverId: string;
+}
+
+export class AnnounceAwardDto {
+  @IsString()
+  winningVendorId: string;
+
+  @Sanitize()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(5000)
+  announcementText: string;
 }

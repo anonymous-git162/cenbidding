@@ -50,10 +50,10 @@ const darkTheme = createTheme({
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [mode, setMode] = useState<'light' | 'dark'>(() => {
-    return (localStorage.getItem('theme') as 'light' | 'dark') || 'light';
+    return (sessionStorage.getItem('theme') as 'light' | 'dark') || 'light';
   });
 
-  useEffect(() => { localStorage.setItem('theme', mode); }, [mode]);
+  useEffect(() => { sessionStorage.setItem('theme', mode); }, [mode]);
 
   const toggleTheme = () => setMode((prev) => (prev === 'light' ? 'dark' : 'light'));
 

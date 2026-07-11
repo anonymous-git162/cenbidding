@@ -21,6 +21,8 @@ import {
   QueryProcurementDto,
   ReviewDto,
   PublishDto,
+  ReassignApproverDto,
+  AnnounceAwardDto,
 } from './dto/procurement.dto';
 
 @ApiTags('Procurements')
@@ -78,7 +80,7 @@ export class ProcurementsController {
   @ApiOperation({ summary: 'Reassign approver for procurement' })
   reassignApprover(
     @Param('id') id: string,
-    @Body() body: { approverId: string },
+    @Body() body: ReassignApproverDto,
   ) {
     return this.procurementsService.reassignApprover(id, body.approverId);
   }
@@ -234,7 +236,7 @@ export class ProcurementsController {
   @ApiOperation({ summary: 'Announce award winner' })
   announceAward(
     @Param('id') id: string,
-    @Body() body: { winningVendorId: string; announcementText: string },
+    @Body() body: AnnounceAwardDto,
     @Request() req: any,
   ) {
     return this.procurementsService.announceAward(

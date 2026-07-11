@@ -14,7 +14,8 @@ import { VendorService } from './vendor.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { UserRole, VendorStatus } from '@prisma/client';
+import { UserRole } from '@prisma/client';
+import { VendorSelfRegisterDto, VendorCreateDto, VendorUpdateDto } from './dto/vendor.dto';
 
 @ApiTags('Vendors')
 @ApiBearerAuth()
@@ -26,18 +27,7 @@ export class VendorController {
   @Post('register')
   @Public()
   @ApiOperation({ summary: 'Public vendor self-registration' })
-  async selfRegister(
-    @Body()
-    body: {
-      email: string;
-      password: string;
-      fullName: string;
-      companyName: string;
-      taxId?: string;
-      phone?: string;
-      address?: string;
-    },
-  ) {
+  async selfRegister(@Body() body: VendorSelfRegisterDto) {
     return this.vendorService.selfRegister(body);
   }
 
@@ -58,18 +48,7 @@ export class VendorController {
   @Post()
   @Roles(UserRole.ADMIN, UserRole.PROCUREMENT)
   @ApiOperation({ summary: 'Register a new vendor' })
-  create(
-    @Body()
-    body: {
-      companyName: string;
-      taxId?: string;
-      contactName: string;
-      contactEmail: string;
-      phone?: string;
-      address?: string;
-      userId?: string;
-    },
-  ) {
+  create(@Body() body: VendorCreateDto) {
     return this.vendorService.create(body);
   }
 
@@ -95,19 +74,7 @@ export class VendorController {
   @Patch(':id')
   @Roles(UserRole.ADMIN, UserRole.PROCUREMENT)
   @ApiOperation({ summary: 'Update vendor' })
-  update(
-    @Param('id') id: string,
-    @Body()
-    body: {
-      companyName?: string;
-      taxId?: string;
-      contactName?: string;
-      contactEmail?: string;
-      phone?: string;
-      address?: string;
-      status?: VendorStatus;
-    },
-  ) {
+  update(@Param('id') id: string, @Body() body: VendorUpdateDto) {
     return this.vendorService.update(id, body);
   }
 

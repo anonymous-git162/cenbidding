@@ -50,7 +50,7 @@ describe('ChangePasswordPage', () => {
     await userEvent.type(inputs[2], 'Ab1');
     await userEvent.click(screen.getByRole('button', { name: 'Change Password' }));
 
-    expect(screen.getByText('New password must be at least 6 characters')).toBeInTheDocument();
+    expect(screen.getByText('New password must be at least 8 characters')).toBeInTheDocument();
   });
 
   it('shows error when passwords do not match', async () => {

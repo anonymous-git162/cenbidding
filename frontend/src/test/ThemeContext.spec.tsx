@@ -14,7 +14,7 @@ function TestConsumer() {
 
 describe('ThemeContext', () => {
   beforeEach(() => {
-    localStorage.clear();
+    sessionStorage.clear();
   });
 
   it('should default to light mode', () => {
@@ -29,15 +29,15 @@ describe('ThemeContext', () => {
     expect(screen.getByTestId('mode').textContent).toBe('dark');
   });
 
-  it('should persist mode in localStorage', async () => {
+  it('should persist mode in sessionStorage', async () => {
     const user = userEvent.setup();
     render(<ThemeProvider><TestConsumer /></ThemeProvider>);
     await user.click(screen.getByTestId('toggle'));
-    expect(localStorage.getItem('theme')).toBe('dark');
+    expect(sessionStorage.getItem('theme')).toBe('dark');
   });
 
-  it('should restore mode from localStorage', () => {
-    localStorage.setItem('theme', 'dark');
+  it('should restore mode from sessionStorage', () => {
+    sessionStorage.setItem('theme', 'dark');
     render(<ThemeProvider><TestConsumer /></ThemeProvider>);
     expect(screen.getByTestId('mode').textContent).toBe('dark');
   });

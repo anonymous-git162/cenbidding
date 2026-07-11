@@ -79,8 +79,8 @@ ebidding-final/
 
 | Suite | Type | Count | Status |
 |-------|------|-------|--------|
-| Backend unit tests | Jest | 367 (43 suites) | ✅ Passed |
-| Frontend unit tests | Vitest | 179 (28 files) | ✅ Passed |
+| Backend unit tests | Jest | 370 (43 suites) | ✅ Passed |
+| Frontend unit tests | Vitest | 180 (28 files) | ✅ Passed |
 | Backend TypeScript | `tsc --noEmit` | — | ✅ Clean |
 | Frontend TypeScript | `tsc --noEmit` | — | ✅ Clean |
 | Backend e2e | Supertest | 101 (14 suites) | ✅ Passed |

@@ -141,8 +141,8 @@ export class UsersService {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
       throw new BadRequestException('Invalid email format');
     }
-    if (!data.password || data.password.length < 6) {
-      throw new BadRequestException('Password must be at least 6 characters');
+    if (!data.password || data.password.length < 8) {
+      throw new BadRequestException('Password must be at least 8 characters');
     }
     const existing = await this.prisma.user.findUnique({
       where: { email: data.email },
@@ -207,8 +207,8 @@ export class UsersService {
     if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
       throw new BadRequestException('Invalid email format');
     }
-    if (data.password && data.password.length < 6) {
-      throw new BadRequestException('Password must be at least 6 characters');
+    if (data.password && data.password.length < 8) {
+      throw new BadRequestException('Password must be at least 8 characters');
     }
     if (data.email && data.email !== user.email) {
       const existing = await this.prisma.user.findUnique({

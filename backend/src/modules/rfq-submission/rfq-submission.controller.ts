@@ -15,6 +15,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+import { CreateSubmissionDto, UpdateSubmissionDto } from './dto/rfq-submission.dto';
 
 @ApiTags('RFQ Submissions')
 @ApiBearerAuth()
@@ -29,16 +30,7 @@ export class RfqSubmissionController {
   @Post()
   @Roles(UserRole.VENDOR)
   @ApiOperation({ summary: 'Create a new submission' })
-  async create(
-    @Body()
-    body: {
-      procurementId: string;
-      price: number;
-      proposalText?: string;
-      fileIds?: string[];
-    },
-    @Request() req: any,
-  ) {
+  async create(@Body() body: CreateSubmissionDto, @Request() req: any) {
     const vendor = await this.prisma.vendor.findUnique({
       where: { userId: req.user.id },
     });
@@ -58,7 +50,7 @@ export class RfqSubmissionController {
   @ApiOperation({ summary: 'Update a draft submission' })
   update(
     @Param('id') id: string,
-    @Body() body: { price?: number; proposalText?: string; fileIds?: string[] },
+    @Body() body: UpdateSubmissionDto,
     @Request() req: any,
   ) {
     return this.submissionService.update(

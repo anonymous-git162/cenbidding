@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Fab, Dialog, DialogTitle, DialogContent, IconButton, Box } from '@mui/material';
 import { Icon } from './Icon';
 
-const EMBED_URL = 'https://copilotstudio.microsoft.com/environments/Default-0e77a136-7774-4154-8dc7-0b7cb3e3b683/bots/cref5_Ebidding_lP5TIi/canvas?__version__=2&enableFileAttachment=false&cliAgent=true';
+const EMBED_URL = import.meta.env.VITE_COPILOT_URL || '';
 
 export default function CopilotChat() {
   const [open, setOpen] = useState(false);
@@ -60,7 +60,6 @@ export default function CopilotChat() {
           <iframe
             src={EMBED_URL}
             title="Copilot Assistant"
-            allow="microphone; camera"
           />
         </DialogContent>
       </Dialog>
