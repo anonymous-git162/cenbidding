@@ -146,6 +146,11 @@ describe('BiddingRoomPage', () => {
     (useAuth as any).mockReturnValue({
       user: { id: 'vendor-user', role: 'VENDOR', fullName: 'Vendor Inc' },
     });
+    mockGet.mockImplementation((url: string) => {
+      if (url.startsWith('/procurements')) return Promise.resolve({ data: { data: mockProcurements, total: 2 } });
+      if (url.startsWith('/vendor-invitations/my')) return Promise.resolve({ data: [{ procurementId: 'proc-1', invitationStatus: 'ACCEPTED' }] });
+      return Promise.resolve({ data: [] });
+    });
     renderPage();
 
     await waitFor(() => {
@@ -162,6 +167,7 @@ describe('BiddingRoomPage', () => {
     let callCount = 0;
     mockGet.mockImplementation((url: string) => {
       if (url.startsWith('/procurements')) return Promise.resolve({ data: { data: mockProcurements, total: 2 } });
+      if (url.startsWith('/vendor-invitations/my')) return Promise.resolve({ data: [{ procurementId: 'proc-1', invitationStatus: 'ACCEPTED' }] });
       if (url.includes('/rounds/procurement')) return Promise.resolve({ data: mockRounds });
       if (url.includes('/my-bids')) {
         callCount++;

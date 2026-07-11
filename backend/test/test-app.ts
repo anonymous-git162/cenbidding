@@ -9,6 +9,9 @@ let app: INestApplication;
 let prisma: PrismaService;
 
 export async function initTestApp() {
+  process.env.CLOUDINARY_CLOUD_NAME = '';
+  process.env.CLOUDINARY_API_KEY = '';
+  process.env.CLOUDINARY_API_SECRET = '';
   const moduleFixture: TestingModule = await Test.createTestingModule({
     imports: [AppModule],
   }).compile();
