@@ -140,20 +140,24 @@ async function bootstrap() {
     }),
   );
 
-  // Swagger docs
-  const config = new DocumentBuilder()
-    .setTitle('E-Bidding API')
-    .setDescription('Enterprise E-Bidding Platform API')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
+  // Swagger docs (disabled in production to prevent API schema disclosure)
+  if (process.env.NODE_ENV !== 'production') {
+    const config = new DocumentBuilder()
+      .setTitle('E-Bidding API')
+      .setDescription('Enterprise E-Bidding Platform API')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api/docs', app, document);
+  }
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
   console.log(`Server running on http://localhost:${port}`);
-  console.log(`API docs at http://localhost:${port}/api/docs`);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`API docs at http://localhost:${port}/api/docs`);
+  }
 }
 bootstrap();
