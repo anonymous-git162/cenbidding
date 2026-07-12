@@ -553,6 +553,13 @@ export class ProcurementsService {
   }
 
   async completeEbidding(id: string, userId: string) {
+    const openRounds = await this.prisma.ebiddingRound.count({
+      where: { procurementId: id, status: 'OPEN' },
+    });
+    if (openRounds > 0) {
+      throw new BadRequestException('Cannot complete e-bidding while a round is still open. Close all rounds first.');
+    }
+
     const result = await this.transition(
       id,
       'EVALUATION',
