@@ -62,7 +62,7 @@ export class FilesService {
       const safeName = decodedName.replace(/[^a-zA-Z0-9._-]/g, '_');
       const result = await cloudinary.uploader.upload(
         `data:${file.mimetype};base64,${file.buffer.toString('base64')}`,
-        { public_id: `${Date.now()}-${safeName}` },
+        { public_id: `${Date.now()}-${safeName}`, access_mode: 'public' },
       );
       storagePath = result.secure_url;
     } else {
@@ -96,23 +96,24 @@ export class FilesService {
     const file = await this.getFile(id, userId, userRole);
     if (!file) return null;
 
+    // For Cloudinary URLs, try to get a signed URL
     if (file.storagePath.startsWith('http') && this.cloudinaryEnabled) {
       try {
-        const uploadIdx = file.storagePath.indexOf('/upload/');
-        if (uploadIdx === -1) return { redirect: file.storagePath };
-        // Extract resource type from URL (e.g. "image" from "/image/upload/")
-        const beforeUpload = file.storagePath.substring(0, uploadIdx);
-        const lastSlash = beforeUpload.lastIndexOf('/');
-        const resourceType = lastSlash >= 0 ? beforeUpload.substring(lastSlash + 1) : 'image';
-        let publicId = file.storagePath.substring(uploadIdx + 8);
-        publicId = publicId.split('?')[0];
-        const lastDot = publicId.lastIndexOf('.');
-        if (lastDot > 0) publicId = publicId.substring(0, lastDot);
-        const url = cloudinary.url(publicId, { resource_type: resourceType, sign_url: true, secure: true });
-        return { redirect: url };
-      } catch {
-        return { redirect: file.storagePath };
-      }
+        const urlObj = new URL(file.storagePath);
+        const pathParts = urlObj.pathname.split('/');
+        // URL format: /{cloud_name}/{resource_type}/upload/{public_id_with_ext}
+        const uploadIdx = pathParts.indexOf('upload');
+        if (uploadIdx >= 0 && uploadIdx + 1 < pathParts.length) {
+          const resourceType = pathParts[uploadIdx - 1] || 'image';
+          const publicIdWithExt = pathParts.slice(uploadIdx + 1).join('/');
+          // Remove extension for public_id
+          const lastDot = publicIdWithExt.lastIndexOf('.');
+          const publicId = lastDot > 0 ? publicIdWithExt.substring(0, lastDot) : publicIdWithExt;
+          const signedUrl = cloudinary.url(publicId, { resource_type: resourceType, sign_url: true, secure: true });
+          return { redirect: signedUrl };
+        }
+      } catch { /* fallback */ }
+      return { redirect: file.storagePath };
     }
 
     if (file.storagePath.startsWith('http')) {
