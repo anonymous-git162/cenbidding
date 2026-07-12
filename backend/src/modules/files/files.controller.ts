@@ -52,6 +52,7 @@ export class FilesController {
     const result = await this.filesService.downloadFile(id, req.user.id, req.user.role);
     if (!result) return res.status(404).json({ message: 'File not found' });
     if ('error' in result) return res.status(502).json({ message: result.error });
+    if ('redirect' in result) return res.redirect(result.redirect);
 
     res.setHeader('Content-Type', result.contentType);
     const encodedName = encodeURIComponent(result.fileName);

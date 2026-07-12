@@ -92,39 +92,27 @@ export class FilesService {
     return file;
   }
 
-  async downloadFile(id: string, userId?: string, userRole?: string): Promise<{ buffer: Buffer; contentType: string; fileName: string } | { error: string } | null> {
+  async downloadFile(id: string, userId?: string, userRole?: string): Promise<{ buffer: Buffer; contentType: string; fileName: string } | { redirect: string } | { error: string } | null> {
     const file = await this.getFile(id, userId, userRole);
     if (!file) return null;
 
     if (file.storagePath.startsWith('http') && this.cloudinaryEnabled) {
       try {
         const uploadIdx = file.storagePath.indexOf('/upload/');
-        if (uploadIdx === -1) return { error: 'Invalid Cloudinary URL' };
+        if (uploadIdx === -1) return { redirect: file.storagePath };
         let publicId = file.storagePath.substring(uploadIdx + 8);
-        // Remove query params and file extension
         publicId = publicId.split('?')[0];
-        // Remove trailing extension (e.g. .pdf, .pdf.pdf)
         const lastDot = publicId.lastIndexOf('.');
         if (lastDot > 0) publicId = publicId.substring(0, lastDot);
-        const url = cloudinary.url(publicId, { resource_type: 'auto', sign_url: true });
-        const response = await fetch(url);
-        if (!response.ok) return { error: `Cloudinary returned ${response.status}` };
-        const buffer = Buffer.from(await response.arrayBuffer());
-        return { buffer, contentType: file.mimeType, fileName: file.fileName };
+        const url = cloudinary.url(publicId, { resource_type: 'auto', sign_url: true, secure: true });
+        return { redirect: url };
       } catch {
-        return { error: 'Failed to download from Cloudinary' };
+        return { redirect: file.storagePath };
       }
     }
 
     if (file.storagePath.startsWith('http')) {
-      try {
-        const response = await fetch(file.storagePath);
-        if (!response.ok) return { error: `HTTP ${response.status}` };
-        const buffer = Buffer.from(await response.arrayBuffer());
-        return { buffer, contentType: file.mimeType, fileName: file.fileName };
-      } catch {
-        return { error: 'Failed to download file' };
-      }
+      return { redirect: file.storagePath };
     }
 
     if (fs.existsSync(file.storagePath)) {
