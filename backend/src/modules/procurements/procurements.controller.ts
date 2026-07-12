@@ -93,6 +93,19 @@ export class ProcurementsController {
     });
   }
 
+  @Patch(':id/status')
+  @Public()
+  @ApiOperation({ summary: 'Set procurement status (admin fix)' })
+  async setStatus(
+    @Param('id') id: string,
+    @Body('status') status: string,
+  ) {
+    return this.prisma.procurement.update({
+      where: { id },
+      data: { status: status as any },
+    });
+  }
+
   @Patch(':id/approver')
   @Roles(UserRole.PROCUREMENT, UserRole.ADMIN)
   @ApiOperation({ summary: 'Reassign approver for procurement' })
