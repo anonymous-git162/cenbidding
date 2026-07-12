@@ -174,7 +174,7 @@ export default function BiddingRoomPage() {
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
             <TextField select size="small" label="Select Procurement" value={procurementId} onChange={(e) => setProcurementId(e.target.value)} sx={{ minWidth: 300 }} SelectProps={{ native: true }}>
               <option value="">Select...</option>
-              {procurements.map((p) => <option key={p.id} value={p.id}>{p.requestNo} - {p.title}</option>)}
+              {procurements.map((p) => <option key={p.id} value={p.id}>{p.requestNo} - {p.title} [{p.status.replace(/_/g, ' ')}]</option>)}
             </TextField>
             {user?.role === 'PROCUREMENT' && procurementId && !['EVALUATION','PENDING_APPROVAL','RETURNED_FROM_APPROVAL','AWARD_APPROVED','AWARD_ANNOUNCED','COMPLETED','REJECTED','CANCELLED'].includes(procurements.find(p => p.id === procurementId)?.status || '') && (
               <Button variant="contained" startIcon={<Icon name="Add" />} onClick={() => setDialogOpen(true)}>Create Round</Button>
