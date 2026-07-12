@@ -100,11 +100,15 @@ export class FilesService {
       try {
         const uploadIdx = file.storagePath.indexOf('/upload/');
         if (uploadIdx === -1) return { redirect: file.storagePath };
+        // Extract resource type from URL (e.g. "image" from "/image/upload/")
+        const beforeUpload = file.storagePath.substring(0, uploadIdx);
+        const lastSlash = beforeUpload.lastIndexOf('/');
+        const resourceType = lastSlash >= 0 ? beforeUpload.substring(lastSlash + 1) : 'image';
         let publicId = file.storagePath.substring(uploadIdx + 8);
         publicId = publicId.split('?')[0];
         const lastDot = publicId.lastIndexOf('.');
         if (lastDot > 0) publicId = publicId.substring(0, lastDot);
-        const url = cloudinary.url(publicId, { resource_type: 'auto', sign_url: true, secure: true });
+        const url = cloudinary.url(publicId, { resource_type: resourceType, sign_url: true, secure: true });
         return { redirect: url };
       } catch {
         return { redirect: file.storagePath };
