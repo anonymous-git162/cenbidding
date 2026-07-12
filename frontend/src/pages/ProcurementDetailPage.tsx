@@ -225,7 +225,7 @@ export default function ProcurementDetailPage() {
             <Button variant="contained" color="primary" startIcon={<Icon name="Description" />} onClick={() => handleAction('draftRfp')}>Draft RFP</Button>
           )}
           {role === 'PROCUREMENT' && status === 'RFP_DRAFTING' && (
-            <Button variant="contained" color="success" startIcon={<Icon name="Publish" />} onClick={() => handleAction('publishRfp')}>Publish RFP</Button>
+            <Button variant="contained" color="success" startIcon={<Icon name="Publish" />} onClick={() => setDialog({ type: 'publishRfp', title: 'Publish RFP' })}>Publish RFP</Button>
           )}
           {role === 'PROCUREMENT' && status === 'RETURNED_FROM_APPROVAL' && (
             <Button variant="contained" color="warning" startIcon={<Icon name="Send" />} onClick={() => handleAction('resubmitForApproval')}>Resubmit for Approval</Button>
@@ -708,6 +708,12 @@ export default function ProcurementDetailPage() {
               <Alert severity="warning" sx={{ mb: 1, borderRadius: 1 }}>Deadline must be at least 7 days from today.</Alert>
               <TextField fullWidth label="Submission Deadline" type="datetime-local" value={deadline} onChange={(e) => setDeadline(e.target.value)} InputLabelProps={{ shrink: true }} required error={deadline !== '' && new Date(deadline) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)} helperText={deadline !== '' && new Date(deadline) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) ? 'Deadline must be at least 7 days from today' : ''} />
             </Box>
+          ) : dialog?.type === 'publishRfp' ? (
+            <Box>
+              <Alert severity="info" sx={{ mb: 2, borderRadius: 1 }}>Set a deadline for vendor submissions.</Alert>
+              <Alert severity="warning" sx={{ mb: 1, borderRadius: 1 }}>Deadline must be at least 7 days from today.</Alert>
+              <TextField fullWidth label="Submission Deadline" type="datetime-local" value={deadline} onChange={(e) => setDeadline(e.target.value)} InputLabelProps={{ shrink: true }} required error={deadline !== '' && new Date(deadline) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)} helperText={deadline !== '' && new Date(deadline) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) ? 'Deadline must be at least 7 days from today' : ''} />
+            </Box>
           ) : dialog?.type === 'reassign' ? (
             <Box>
               <Alert severity="info" sx={{ mb: 2, borderRadius: 1 }}>Select a new approver for this procurement.</Alert>
@@ -765,11 +771,11 @@ export default function ProcurementDetailPage() {
         <DialogActions sx={{ px: 3, py: 2 }}>
           <Button onClick={() => setDialog(null)} disabled={actionLoading}>Cancel</Button>
           <Button
-            variant="contained" onClick={() => handleAction(dialog!.type)} disabled={actionLoading || (dialog?.type === 'publish' && (!deadline || new Date(deadline) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000))) || (dialog?.type !== 'approve' && dialog?.type !== 'publish' && dialog?.type !== 'reassign' && dialog?.type !== 'announce' && dialog?.type !== 'signContract' && !comment) || (dialog?.type === 'reassign' && !(dialog as any)?.approverId) || (dialog?.type === 'announce' && !(dialog as any)?.winningVendorId)}
+            variant="contained" onClick={() => handleAction(dialog!.type)} disabled={actionLoading || ((dialog?.type === 'publish' || dialog?.type === 'publishRfp') && (!deadline || new Date(deadline) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000))) || (dialog?.type !== 'approve' && dialog?.type !== 'publish' && dialog?.type !== 'publishRfp' && dialog?.type !== 'reassign' && dialog?.type !== 'announce' && dialog?.type !== 'signContract' && !comment) || (dialog?.type === 'reassign' && !(dialog as any)?.approverId) || (dialog?.type === 'announce' && !(dialog as any)?.winningVendorId)}
             color={dialog?.type === 'reject' ? 'error' : dialog?.type === 'approve' ? 'success' : 'primary'}
             startIcon={actionLoading ? <CircularProgress size={16} color="inherit" /> : null}
           >
-            {actionLoading ? 'Processing...' : dialog?.type === 'approve' ? 'Approve' : dialog?.type === 'reject' ? 'Reject' : dialog?.type === 'publish' ? 'Publish' : dialog?.type === 'announce' ? 'Announce' : dialog?.type === 'signContract' ? 'Sign Contract' : 'Confirm'}
+            {actionLoading ? 'Processing...' : dialog?.type === 'approve' ? 'Approve' : dialog?.type === 'reject' ? 'Reject' : (dialog?.type === 'publish' || dialog?.type === 'publishRfp') ? 'Publish' : dialog?.type === 'announce' ? 'Announce' : dialog?.type === 'signContract' ? 'Sign Contract' : 'Confirm'}
           </Button>
         </DialogActions>
       </Dialog>
