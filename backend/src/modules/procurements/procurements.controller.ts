@@ -81,7 +81,7 @@ export class ProcurementsController {
   }
 
   @Patch(':id/deadline')
-  @Public()
+  @Roles(UserRole.PROCUREMENT, UserRole.ADMIN)
   @ApiOperation({ summary: 'Set submission deadline on published procurement' })
   async setDeadline(
     @Param('id') id: string,
