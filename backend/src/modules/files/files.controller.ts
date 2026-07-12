@@ -20,6 +20,7 @@ import {
 import { FilesService } from './files.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import * as fs from 'fs';
+import * as https from 'https';
 
 @ApiTags('Files')
 @ApiBearerAuth()
@@ -54,16 +55,24 @@ export class FilesController {
 
     if (file.storagePath.startsWith('http')) {
       try {
-        const response = await fetch(file.storagePath);
-        if (!response.ok) return res.status(502).json({ message: 'Failed to fetch file from storage' });
-        const buffer = Buffer.from(await response.arrayBuffer());
-        const contentType = response.headers.get('content-type') || file.mimeType;
-        res.setHeader('Content-Type', contentType);
+        const data = await new Promise<Buffer>((resolve, reject) => {
+          https.get(file.storagePath, (response) => {
+            if (response.statusCode !== 200) {
+              reject(new Error(`HTTP ${response.statusCode}`));
+              return;
+            }
+            const chunks: Buffer[] = [];
+            response.on('data', (chunk: Buffer) => chunks.push(chunk));
+            response.on('end', () => resolve(Buffer.concat(chunks)));
+            response.on('error', reject);
+          }).on('error', reject);
+        });
+        res.setHeader('Content-Type', file.mimeType);
         const encodedName = encodeURIComponent(file.fileName);
         const asciiName = file.fileName.replace(/[^\x20-\x7E]/g, '_');
         res.setHeader('Content-Disposition', `attachment; filename="${asciiName}"; filename*=UTF-8''${encodedName}`);
-        res.setHeader('Content-Length', buffer.length);
-        return res.send(buffer);
+        res.setHeader('Content-Length', data.length);
+        return res.send(data);
       } catch {
         return res.status(502).json({ message: 'Failed to fetch file from storage' });
       }
