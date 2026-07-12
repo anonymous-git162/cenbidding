@@ -53,7 +53,20 @@ export class FilesController {
     if (!file) return res.status(404).json({ message: 'File not found' });
 
     if (file.storagePath.startsWith('http')) {
-      return res.redirect(file.storagePath);
+      try {
+        const response = await fetch(file.storagePath);
+        if (!response.ok) return res.status(502).json({ message: 'Failed to fetch file from storage' });
+        const buffer = Buffer.from(await response.arrayBuffer());
+        const contentType = response.headers.get('content-type') || file.mimeType;
+        res.setHeader('Content-Type', contentType);
+        const encodedName = encodeURIComponent(file.fileName);
+        const asciiName = file.fileName.replace(/[^\x20-\x7E]/g, '_');
+        res.setHeader('Content-Disposition', `attachment; filename="${asciiName}"; filename*=UTF-8''${encodedName}`);
+        res.setHeader('Content-Length', buffer.length);
+        return res.send(buffer);
+      } catch {
+        return res.status(502).json({ message: 'Failed to fetch file from storage' });
+      }
     }
 
     if (fs.existsSync(file.storagePath)) {
