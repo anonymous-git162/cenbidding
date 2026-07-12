@@ -243,7 +243,7 @@ export default function ProcurementDetailPage() {
              <Button variant="contained" color="warning" startIcon={<Icon name="Gavel" />} onClick={() => handleAction('completeEbidding')}>Close E-Bidding</Button>
            )}
           {role === 'PROCUREMENT' && status === 'EBIDDING_CLOSED' && (
-            <Button variant="contained" color="info" startIcon={<Icon name="CheckCircle" />} onClick={() => handleAction('completeEvaluation')}>Complete Evaluation</Button>
+            <Button variant="contained" color="info" startIcon={<Icon name="CheckCircle" />} onClick={() => handleAction('completeEbidding')}>Complete E-Bidding</Button>
           )}
           {role === 'PROCUREMENT' && status === 'VENDOR_RESPONSE_IN_PROGRESS' && (
             <Button variant="outlined" color="info" startIcon={<Icon name="CheckCircle" />} onClick={() => handleAction('completeEbidding')} sx={{ ml: 1 }}>Skip to Evaluation</Button>
