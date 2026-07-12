@@ -15,6 +15,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
 import { ProcurementsService } from './procurements.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PrismaService } from '../../database/prisma.service';
 import {
   CreateProcurementDto,
   UpdateProcurementDto,
@@ -30,7 +31,10 @@ import {
 @UseGuards(JwtAuthGuard)
 @Controller('procurements')
 export class ProcurementsController {
-  constructor(private procurementsService: ProcurementsService) {}
+  constructor(
+    private procurementsService: ProcurementsService,
+    private prisma: PrismaService,
+  ) {}
 
   @Get('stats')
   @Roles(UserRole.ADMIN, UserRole.PROCUREMENT)
@@ -73,6 +77,19 @@ export class ProcurementsController {
     @Request() req: any,
   ) {
     return this.procurementsService.update(id, dto, req.user.id);
+  }
+
+  @Patch(':id/deadline')
+  @Roles(UserRole.PROCUREMENT, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Set submission deadline on published procurement' })
+  async setDeadline(
+    @Param('id') id: string,
+    @Body('submissionDeadline') submissionDeadline: string,
+  ) {
+    return this.prisma.procurement.update({
+      where: { id },
+      data: { submissionDeadline: new Date(submissionDeadline) },
+    });
   }
 
   @Patch(':id/approver')
