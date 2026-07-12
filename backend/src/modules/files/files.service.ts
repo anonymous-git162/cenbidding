@@ -98,8 +98,14 @@ export class FilesService {
 
     if (file.storagePath.startsWith('http') && this.cloudinaryEnabled) {
       try {
-        const publicId = file.storagePath.split('/upload/')[1]?.split('.')[0];
-        if (!publicId) return { error: 'Invalid Cloudinary URL' };
+        const uploadIdx = file.storagePath.indexOf('/upload/');
+        if (uploadIdx === -1) return { error: 'Invalid Cloudinary URL' };
+        let publicId = file.storagePath.substring(uploadIdx + 8);
+        // Remove query params and file extension
+        publicId = publicId.split('?')[0];
+        // Remove trailing extension (e.g. .pdf, .pdf.pdf)
+        const lastDot = publicId.lastIndexOf('.');
+        if (lastDot > 0) publicId = publicId.substring(0, lastDot);
         const url = cloudinary.url(publicId, { resource_type: 'auto', sign_url: true });
         const response = await fetch(url);
         if (!response.ok) return { error: `Cloudinary returned ${response.status}` };
