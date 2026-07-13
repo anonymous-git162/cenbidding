@@ -2,7 +2,6 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { validateMagicBytes } from '../../common/helpers/magic-bytes';
 import { v2 as cloudinary } from 'cloudinary';
-import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -60,7 +59,7 @@ export class FilesService {
 
     let storagePath: string;
     if (this.cloudinaryEnabled) {
-      const safeName = decodedName.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const safeName = decodedName.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/\.[^.]+$/, '');
       const result = await cloudinary.uploader.upload(
         `data:${file.mimetype};base64,${file.buffer.toString('base64')}`,
         { public_id: `${Date.now()}-${safeName}`, access_mode: 'public' },
@@ -102,52 +101,31 @@ export class FilesService {
         const urlObj = new URL(file.storagePath);
         const pathParts = urlObj.pathname.split('/');
         const uploadIdx = pathParts.indexOf('upload');
-        if (uploadIdx >= 0 && uploadIdx + 1 < pathParts.length) {
-          const resourceType = pathParts[uploadIdx - 1] || 'image';
-          const publicId = pathParts.slice(uploadIdx + 1).join('/');
-          const cloudName = process.env.CLOUDINARY_CLOUD_NAME || '';
-          const apiSecret = process.env.CLOUDINARY_API_SECRET || '';
-          // verify API credentials via Admin API
-          let apiStatus = 'ok';
-          try {
-            const ping = await cloudinary.api.ping();
-            apiStatus = ping.status || 'ok';
-          } catch (e: any) {
-            apiStatus = `admin_fail: ${e?.error?.message || e?.message || e}`.slice(0, 80);
-          }
-          // try SDK-generated signed URL
-          const signedUrl = cloudinary.url(publicId, {
-            resource_type: resourceType as 'image' | 'video' | 'raw' | 'auto',
-            type: 'upload', sign_url: true, secure: true,
-          });
-          const cloudRes = await fetch(signedUrl);
-          if (cloudRes.ok) {
-            const arr = await cloudRes.arrayBuffer();
-            return { buffer: Buffer.from(arr), contentType: file.mimeType, fileName: file.fileName };
-          }
-          // try manual signed URL with timestamp & params
-          const ts = Math.floor(Date.now() / 1000);
-          const paramStr = [`public_id=${publicId}`, `resource_type=${resourceType}`, `timestamp=${ts}`, 'type=upload'].sort().join('&');
-          const sigHash = crypto.createHash('sha1').update(paramStr + apiSecret).digest();
-          const sig = Buffer.from(sigHash).toString('base64').slice(0, 8).replace(/\//g, '_').replace(/\+/g, '-');
-          const manualUrl = `https://res.cloudinary.com/${cloudName}/${resourceType}/upload/s--${sig}--/${publicId}`;
-          const manualRes = await fetch(manualUrl);
-          if (manualRes.ok) {
-            const arr = await manualRes.arrayBuffer();
-            return { buffer: Buffer.from(arr), contentType: file.mimeType, fileName: file.fileName };
-          }
-          // try fetching secure_url from Admin API resource
-          let resourceUrl = '';
-          try {
-            const bareId = publicId.replace(/^v\d+\//, '');
-            const info = await cloudinary.api.resource(bareId, { resource_type: resourceType as 'image' | 'video' | 'raw' | 'auto', type: 'upload' });
-            resourceUrl = info.secure_url || '';
-          } catch { /* skip */ }
-          const manualErr = await manualRes.text().catch(() => '') || '';
-          return { error: `api=${apiStatus} sdk(${cloudRes.status}) manual(${manualRes.status}):${manualErr.slice(0,80)}${resourceUrl ? ` url=${resourceUrl.slice(0,60)}` : ''}` };
+        if (uploadIdx < 0) throw new Error('Not a Cloudinary upload URL');
+
+        const resourceType = pathParts[uploadIdx - 1] || 'image';
+        const afterUpload = pathParts.slice(uploadIdx + 1).join('/');
+        let bareId = afterUpload.replace(/^v\d+\//, '');
+        const dotIdx = bareId.lastIndexOf('.');
+        const format = dotIdx >= 0 ? bareId.slice(dotIdx + 1) : '';
+        const publicId = dotIdx >= 0 ? bareId.slice(0, dotIdx) : bareId;
+
+        const downloadUrl = cloudinary.utils.private_download_url(publicId, format, {
+          resource_type: resourceType as 'image' | 'video' | 'raw' | 'auto',
+          type: 'upload',
+          attachment: false,
+          expires_at: Math.floor(Date.now() / 1000) + 3600,
+        });
+
+        const res = await fetch(downloadUrl);
+        if (res.ok) {
+          const arr = await res.arrayBuffer();
+          return { buffer: Buffer.from(arr), contentType: file.mimeType, fileName: file.fileName };
         }
+
+        return { error: `Download failed (${res.status})` };
       } catch (e: any) {
-        return { error: `exception: ${e?.message || e}`.slice(0, 200) };
+        return { error: `download: ${e?.message || e}`.slice(0, 200) };
       }
     }
 
