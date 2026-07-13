@@ -106,9 +106,8 @@ export class FilesService {
         if (uploadIdx >= 0 && uploadIdx + 1 < pathParts.length) {
           const resourceType = pathParts[uploadIdx - 1] || 'image';
           const publicIdWithExt = pathParts.slice(uploadIdx + 1).join('/');
-          // Remove extension for public_id
-          const lastDot = publicIdWithExt.lastIndexOf('.');
-          const publicId = lastDot > 0 ? publicIdWithExt.substring(0, lastDot) : publicIdWithExt;
+          // Don't strip extension - Cloudinary public ID includes the full filename
+          const publicId = publicIdWithExt;
           const signedUrl = cloudinary.url(publicId, { resource_type: resourceType, sign_url: true, secure: true });
           return { redirect: signedUrl };
         }
