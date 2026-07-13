@@ -16,9 +16,23 @@ export class TimelineService {
   }
 
   async findByProcurement(procurementId: string) {
-    return this.prisma.procurementTimeline.findMany({
+    const events = await this.prisma.procurementTimeline.findMany({
       where: { procurementId },
       orderBy: { timestamp: 'desc' },
     });
+
+    const actorIds = [...new Set(events.filter(e => e.actorId).map(e => e.actorId!))];
+    if (actorIds.length === 0) return events;
+
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: actorIds } },
+      select: { id: true, fullName: true },
+    });
+    const nameMap = new Map(users.map(u => [u.id, u.fullName]));
+
+    return events.map(e => ({
+      ...e,
+      actorName: e.actorId ? nameMap.get(e.actorId) || null : null,
+    }));
   }
 }
