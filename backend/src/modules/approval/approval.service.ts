@@ -172,7 +172,7 @@ export class ApprovalService {
 
       const updated = await tx.procurement.update({
         where: { id: procurementId },
-        data: { status: 'AWARD_APPROVED', currentOwnerRole: 'PROCUREMENT' },
+        data: { status: 'AWARD_APPROVED', currentOwnerRole: 'PROCUREMENT', currentStage: 'AWARD_APPROVED' },
       });
 
       await tx.procurementTimeline.create({
@@ -210,6 +210,7 @@ export class ApprovalService {
         data: {
           status: 'RETURNED_FROM_APPROVAL',
           currentOwnerRole: 'PROCUREMENT',
+          currentStage: 'RETURNED_FROM_APPROVAL',
         },
       });
 
@@ -248,6 +249,7 @@ export class ApprovalService {
         data: {
           status: 'REJECTED',
           currentOwnerRole: 'CLOSED',
+          currentStage: 'REJECTED',
           finalDecisionReason: reason,
         },
       });
