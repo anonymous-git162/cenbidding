@@ -90,12 +90,18 @@ async function bootstrap() {
   app.use(cookieParser());
 
   // CORS - allow configured frontend URL, localhost, and Vercel domains
+  const frontendUrl = process.env.FRONTEND_URL;
   const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:5174',
     'http://localhost:3000',
-    process.env.FRONTEND_URL,
+    frontendUrl,
   ].filter(Boolean) as string[];
+
+  // Regex to match Vercel preview deployments for this project (e.g., cenbidding-git-*.vercel.app, cenbidding-*.vercel.app)
+  const vercelPreviewPattern = frontendUrl
+    ? new RegExp(`^https://${frontendUrl.replace('https://', '').replace('.vercel.app', '')}-[^.]+\\.vercel\\.app$`)
+    : null;
 
   app.enableCors({
     origin: (
@@ -103,6 +109,8 @@ async function bootstrap() {
       callback: (err: Error | null, allow?: boolean) => void,
     ) => {
       if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else if (vercelPreviewPattern && vercelPreviewPattern.test(origin)) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
