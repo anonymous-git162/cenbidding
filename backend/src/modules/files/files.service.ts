@@ -118,12 +118,13 @@ export class FilesService {
             const arr = await cloudRes.arrayBuffer();
             return { buffer: Buffer.from(arr), contentType: file.mimeType, fileName: file.fileName };
           }
+          const fallbackRes = await fetch(file.storagePath);
+          if (fallbackRes.ok) {
+            const arr = await fallbackRes.arrayBuffer();
+            return { buffer: Buffer.from(arr), contentType: file.mimeType, fileName: file.fileName };
+          }
         }
       } catch { /* fallback */ }
-    }
-
-    if (file.storagePath.startsWith('http')) {
-      return { redirect: file.storagePath };
     }
 
     if (fs.existsSync(file.storagePath)) {
