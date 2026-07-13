@@ -103,15 +103,10 @@ export class FilesService {
         const uploadIdx = pathParts.indexOf('upload');
         if (uploadIdx >= 0 && uploadIdx + 1 < pathParts.length) {
           const resourceType = pathParts[uploadIdx - 1] || 'image';
-          const segs = [...pathParts.slice(uploadIdx + 1)];
-          const ver = segs[0]?.startsWith('v') ? segs.shift()!.slice(1) : undefined;
-          const nameWithExt = segs.join('/');
-          const ext = nameWithExt.split('.').pop() || '';
-          const nameOnly = ext ? nameWithExt.slice(0, -(ext.length + 1)) : nameWithExt;
-          const signedUrl = cloudinary.url(nameOnly, {
+          const publicId = pathParts.slice(uploadIdx + 1).join('/');
+          const signedUrl = cloudinary.url(publicId, {
             resource_type: resourceType as 'image' | 'video' | 'raw' | 'auto',
-            type: 'upload', format: ext, sign_url: true, secure: true,
-            ...(ver && { version: ver }),
+            type: 'upload', sign_url: true, secure: true,
           });
           const cloudRes = await fetch(signedUrl);
           if (cloudRes.ok) {
