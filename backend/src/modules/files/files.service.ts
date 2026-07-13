@@ -102,8 +102,15 @@ export class FilesService {
         const pathParts = urlObj.pathname.split('/');
         const uploadIdx = pathParts.indexOf('upload');
         if (uploadIdx >= 0 && uploadIdx + 1 < pathParts.length) {
-          // For public files, use the public URL directly
-          return { redirect: file.storagePath };
+          const resourceType = pathParts[uploadIdx - 1] || 'image';
+          const publicIdWithExt = pathParts.slice(uploadIdx + 1).join('/');
+          const signedUrl = cloudinary.url(publicIdWithExt, {
+            resource_type: resourceType as 'image' | 'video' | 'raw' | 'auto',
+            type: 'upload',
+            sign_url: true,
+            secure: true,
+          });
+          return { redirect: signedUrl };
         }
       } catch { /* fallback */ }
       return { redirect: file.storagePath };
