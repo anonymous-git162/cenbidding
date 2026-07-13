@@ -248,6 +248,9 @@ export class ProcurementsService {
         evaluatorAssignments: {
           include: { evaluator: { select: { id: true, fullName: true, email: true, role: true } } },
         },
+        result: {
+          include: { winningVendor: { select: { id: true, companyName: true, userId: true } } },
+        },
       },
     });
 
@@ -255,10 +258,11 @@ export class ProcurementsService {
 
     // Authorization: only allow access based on role
     if (user.role === 'VENDOR') {
-      const invitation = procurement.invitations?.find(
+      const isInvited = procurement.invitations?.some(
         (inv) => inv.vendor?.userId === user.id,
       );
-      if (!invitation) throw new ForbiddenException('Access denied');
+      const isWinner = procurement.result?.winningVendor?.userId === user.id;
+      if (!isInvited && !isWinner) throw new ForbiddenException('Access denied');
     } else if (user.role === 'REQUESTER') {
       if (procurement.requesterId !== user.id)
         throw new ForbiddenException('Access denied');
