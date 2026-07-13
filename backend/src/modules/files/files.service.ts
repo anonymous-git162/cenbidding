@@ -107,6 +107,14 @@ export class FilesService {
           const publicId = pathParts.slice(uploadIdx + 1).join('/');
           const cloudName = process.env.CLOUDINARY_CLOUD_NAME || '';
           const apiSecret = process.env.CLOUDINARY_API_SECRET || '';
+          // verify API credentials via Admin API
+          let apiStatus = 'ok';
+          try {
+            const ping = await cloudinary.api.ping();
+            apiStatus = ping.status || 'ok';
+          } catch (e: any) {
+            apiStatus = `admin_fail: ${e?.error?.message || e?.message || e}`.slice(0, 80);
+          }
           // try SDK-generated signed URL
           const signedUrl = cloudinary.url(publicId, {
             resource_type: resourceType as 'image' | 'video' | 'raw' | 'auto',
@@ -117,9 +125,10 @@ export class FilesService {
             const arr = await cloudRes.arrayBuffer();
             return { buffer: Buffer.from(arr), contentType: file.mimeType, fileName: file.fileName };
           }
-          // try manual sign with type+resource_type in hash
-          const signInput = `public_id=${publicId}&type=upload&resource_type=${resourceType}`;
-          const sigHash = crypto.createHash('sha1').update(signInput + apiSecret).digest();
+          // try manual signed URL with timestamp & params
+          const ts = Math.floor(Date.now() / 1000);
+          const paramStr = [`public_id=${publicId}`, `resource_type=${resourceType}`, `timestamp=${ts}`, 'type=upload'].sort().join('&');
+          const sigHash = crypto.createHash('sha1').update(paramStr + apiSecret).digest();
           const sig = Buffer.from(sigHash).toString('base64').slice(0, 8).replace(/\//g, '_').replace(/\+/g, '-');
           const manualUrl = `https://res.cloudinary.com/${cloudName}/${resourceType}/upload/s--${sig}--/${publicId}`;
           const manualRes = await fetch(manualUrl);
@@ -127,8 +136,15 @@ export class FilesService {
             const arr = await manualRes.arrayBuffer();
             return { buffer: Buffer.from(arr), contentType: file.mimeType, fileName: file.fileName };
           }
+          // try fetching secure_url from Admin API resource
+          let resourceUrl = '';
+          try {
+            const bareId = publicId.replace(/^v\d+\//, '');
+            const info = await cloudinary.api.resource(bareId, { resource_type: resourceType as 'image' | 'video' | 'raw' | 'auto', type: 'upload' });
+            resourceUrl = info.secure_url || '';
+          } catch { /* skip */ }
           const manualErr = await manualRes.text().catch(() => '') || '';
-          return { error: `sdk(${cloudRes.status}) manual(${manualRes.status}):${manualErr.slice(0,100)}` };
+          return { error: `api=${apiStatus} sdk(${cloudRes.status}) manual(${manualRes.status}):${manualErr.slice(0,80)}${resourceUrl ? ` url=${resourceUrl.slice(0,60)}` : ''}` };
         }
       } catch (e: any) {
         return { error: `exception: ${e?.message || e}`.slice(0, 200) };
