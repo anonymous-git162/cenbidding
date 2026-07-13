@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { validateMagicBytes } from '../../common/helpers/magic-bytes';
 import { v2 as cloudinary } from 'cloudinary';
+import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -104,6 +105,9 @@ export class FilesService {
         if (uploadIdx >= 0 && uploadIdx + 1 < pathParts.length) {
           const resourceType = pathParts[uploadIdx - 1] || 'image';
           const publicId = pathParts.slice(uploadIdx + 1).join('/');
+          const cloudName = process.env.CLOUDINARY_CLOUD_NAME || '';
+          const apiSecret = process.env.CLOUDINARY_API_SECRET || '';
+          // try SDK-generated signed URL
           const signedUrl = cloudinary.url(publicId, {
             resource_type: resourceType as 'image' | 'video' | 'raw' | 'auto',
             type: 'upload', sign_url: true, secure: true,
@@ -113,14 +117,18 @@ export class FilesService {
             const arr = await cloudRes.arrayBuffer();
             return { buffer: Buffer.from(arr), contentType: file.mimeType, fileName: file.fileName };
           }
-          const cloudErr = await cloudRes.text().catch(() => '') || '';
-          const fallbackRes = await fetch(file.storagePath);
-          if (fallbackRes.ok) {
-            const arr = await fallbackRes.arrayBuffer();
+          // try manual sign with type+resource_type in hash
+          const signInput = `public_id=${publicId}&type=upload&resource_type=${resourceType}`;
+          const sigHash = crypto.createHash('sha1').update(signInput + apiSecret).digest();
+          const sig = Buffer.from(sigHash).toString('base64').slice(0, 8).replace(/\//g, '_').replace(/\+/g, '-');
+          const manualUrl = `https://res.cloudinary.com/${cloudName}/${resourceType}/upload/s--${sig}--/${publicId}`;
+          const manualRes = await fetch(manualUrl);
+          if (manualRes.ok) {
+            const arr = await manualRes.arrayBuffer();
             return { buffer: Buffer.from(arr), contentType: file.mimeType, fileName: file.fileName };
           }
-          const fallbackErr = await fallbackRes.text().catch(() => '') || '';
-          return { error: `signed(${cloudRes.status}):${cloudErr.slice(0,100)} public(${fallbackRes.status}):${fallbackErr.slice(0,100)}` };
+          const manualErr = await manualRes.text().catch(() => '') || '';
+          return { error: `sdk(${cloudRes.status}) manual(${manualRes.status}):${manualErr.slice(0,100)}` };
         }
       } catch (e: any) {
         return { error: `exception: ${e?.message || e}`.slice(0, 200) };
