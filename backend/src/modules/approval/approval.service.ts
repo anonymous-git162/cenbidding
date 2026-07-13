@@ -165,26 +165,28 @@ export class ApprovalService {
     if (procurement.status !== 'PENDING_APPROVAL')
       throw new BadRequestException('Not pending approval');
 
-    await this.prisma.approval.create({
-      data: { procurementId, approverId, decision: 'APPROVED', comment },
-    });
+    return this.prisma.$transaction(async (tx) => {
+      await tx.approval.create({
+        data: { procurementId, approverId, decision: 'APPROVED', comment },
+      });
 
-    const updated = await this.prisma.procurement.update({
-      where: { id: procurementId },
-      data: { status: 'AWARD_APPROVED', currentOwnerRole: 'PROCUREMENT' },
-    });
+      const updated = await tx.procurement.update({
+        where: { id: procurementId },
+        data: { status: 'AWARD_APPROVED', currentOwnerRole: 'PROCUREMENT' },
+      });
 
-    await this.prisma.procurementTimeline.create({
-      data: {
-        procurementId,
-        eventType: 'APPROVED',
-        actorRole: 'APPROVER',
-        actorId: approverId,
-        metadata: { comment },
-      },
-    });
+      await tx.procurementTimeline.create({
+        data: {
+          procurementId,
+          eventType: 'APPROVED',
+          actorRole: 'APPROVER',
+          actorId: approverId,
+          metadata: { comment },
+        },
+      });
 
-    return updated;
+      return updated;
+    });
   }
 
   async return(procurementId: string, approverId: string, reason?: string) {
@@ -193,34 +195,36 @@ export class ApprovalService {
     });
     if (!procurement) throw new NotFoundException('Procurement not found');
 
-    await this.prisma.approval.create({
-      data: {
-        procurementId,
-        approverId,
-        decision: 'RETURNED',
-        comment: reason,
-      },
-    });
+    return this.prisma.$transaction(async (tx) => {
+      await tx.approval.create({
+        data: {
+          procurementId,
+          approverId,
+          decision: 'RETURNED',
+          comment: reason,
+        },
+      });
 
-    const updated = await this.prisma.procurement.update({
-      where: { id: procurementId },
-      data: {
-        status: 'RETURNED_FROM_APPROVAL',
-        currentOwnerRole: 'PROCUREMENT',
-      },
-    });
+      const updated = await tx.procurement.update({
+        where: { id: procurementId },
+        data: {
+          status: 'RETURNED_FROM_APPROVAL',
+          currentOwnerRole: 'PROCUREMENT',
+        },
+      });
 
-    await this.prisma.procurementTimeline.create({
-      data: {
-        procurementId,
-        eventType: 'RETURNED_FROM_APPROVAL',
-        actorRole: 'APPROVER',
-        actorId: approverId,
-        metadata: { reason },
-      },
-    });
+      await tx.procurementTimeline.create({
+        data: {
+          procurementId,
+          eventType: 'RETURNED_FROM_APPROVAL',
+          actorRole: 'APPROVER',
+          actorId: approverId,
+          metadata: { reason },
+        },
+      });
 
-    return updated;
+      return updated;
+    });
   }
 
   async reject(procurementId: string, approverId: string, reason?: string) {
@@ -229,35 +233,37 @@ export class ApprovalService {
     });
     if (!procurement) throw new NotFoundException('Procurement not found');
 
-    await this.prisma.approval.create({
-      data: {
-        procurementId,
-        approverId,
-        decision: 'REJECTED',
-        comment: reason,
-      },
-    });
+    return this.prisma.$transaction(async (tx) => {
+      await tx.approval.create({
+        data: {
+          procurementId,
+          approverId,
+          decision: 'REJECTED',
+          comment: reason,
+        },
+      });
 
-    const updated = await this.prisma.procurement.update({
-      where: { id: procurementId },
-      data: {
-        status: 'REJECTED',
-        currentOwnerRole: 'CLOSED',
-        finalDecisionReason: reason,
-      },
-    });
+      const updated = await tx.procurement.update({
+        where: { id: procurementId },
+        data: {
+          status: 'REJECTED',
+          currentOwnerRole: 'CLOSED',
+          finalDecisionReason: reason,
+        },
+      });
 
-    await this.prisma.procurementTimeline.create({
-      data: {
-        procurementId,
-        eventType: 'REJECTED',
-        actorRole: 'APPROVER',
-        actorId: approverId,
-        metadata: { reason },
-      },
-    });
+      await tx.procurementTimeline.create({
+        data: {
+          procurementId,
+          eventType: 'REJECTED',
+          actorRole: 'APPROVER',
+          actorId: approverId,
+          metadata: { reason },
+        },
+      });
 
-    return updated;
+      return updated;
+    });
   }
 
   async getOverdueApprovals() {

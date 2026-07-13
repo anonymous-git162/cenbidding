@@ -36,7 +36,7 @@ export const mockPrisma = (): any => ({
   $connect: jest.fn(),
   $disconnect: jest.fn(),
   $queryRaw: jest.fn(),
-  $transaction: jest.fn((fn: any) => fn(mockPrisma())),
+  $transaction: jest.fn(function (fn: any) { return fn(this); }),
 });
 
 export type MockPrisma = ReturnType<typeof mockPrisma>;
