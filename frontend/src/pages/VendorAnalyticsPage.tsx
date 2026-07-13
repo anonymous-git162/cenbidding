@@ -65,7 +65,9 @@ export default function VendorAnalyticsPage() {
 
       try {
         const bidsRes = await api.get('/ebidding/my-bids');
-        setMyBids(bidsRes.data || []);
+        const data = bidsRes.data || [];
+        if (data.length > 0) console.log('myBids[0] keys:', Object.keys(data[0]), 'bidAmount:', data[0].bidAmount, 'amount:', (data[0] as any).amount);
+        setMyBids(data);
       } catch { /* no bids */ }
     } catch {
     } finally {
@@ -240,6 +242,9 @@ export default function VendorAnalyticsPage() {
                       ) : (
                         <Typography variant="body2" fontWeight={700} color="primary.main">${fmt(selectedBid.bidAmount)}</Typography>
                       )}
+                      <Typography variant="caption" color="error.main" sx={{ display: 'block', mt: 0.5 }}>
+                        debug: raw={JSON.stringify(selectedBid.bidAmount)}, keys={Object.keys(selectedBid).join(',')}
+                      </Typography>
                     </Box>
                     <Box>
                       <Typography variant="caption" color="text.secondary">Placed At</Typography>
