@@ -83,7 +83,7 @@ export default function VendorAnalyticsPage() {
     setEditError('');
     try {
       await api.post('/ebidding/bid', { roundId: selectedBid.round?.id, bidAmount: amount });
-      setSelectedBid({ ...selectedBid, amount, submittedAt: new Date().toISOString() });
+      setSelectedBid({ ...selectedBid, bidAmount: amount, submittedAt: new Date().toISOString() });
       setEditMode(false);
       loadData();
     } catch (err: any) {
@@ -95,7 +95,7 @@ export default function VendorAnalyticsPage() {
 
   const handleDeleteBid = async () => {
     if (!selectedBid) return;
-    if (!window.confirm(`Delete your bid of $${Number(selectedBid.amount).toLocaleString()}? This cannot be undone.`)) return;
+    if (!window.confirm(`Delete your bid of $${Number(selectedBid.bidAmount).toLocaleString()}? This cannot be undone.`)) return;
     setSaving(true);
     try {
       await api.delete(`/ebidding/bids/${selectedBid.id}`);
@@ -189,7 +189,7 @@ export default function VendorAnalyticsPage() {
                   <Box>
                     <Typography variant="body2" fontWeight={500}>{bid.round?.procurement?.title || 'N/A'}</Typography>
                     <Typography variant="caption" color="text.secondary">
-                      Round {bid.round?.roundNo} | ${Number(bid.amount).toLocaleString()} | {new Date(bid.submittedAt).toLocaleDateString()}
+                      Round {bid.round?.roundNo} | ${Number(bid.bidAmount).toLocaleString()} | {new Date(bid.submittedAt).toLocaleDateString()}
                     </Typography>
                   </Box>
                   <Chip label={bid.round?.status || '—'} size="small" color={bid.round?.status === 'OPEN' ? 'success' : 'default'} />
@@ -237,7 +237,7 @@ export default function VendorAnalyticsPage() {
                           inputProps={{ min: 0 }}
                         />
                       ) : (
-                        <Typography variant="body2" fontWeight={700} color="primary.main">${Number(selectedBid.amount).toLocaleString()}</Typography>
+                        <Typography variant="body2" fontWeight={700} color="primary.main">${Number(selectedBid.bidAmount).toLocaleString()}</Typography>
                       )}
                     </Box>
                     <Box>
@@ -259,7 +259,7 @@ export default function VendorAnalyticsPage() {
                   {selectedBid?.round?.status === 'OPEN' && (
                     <>
                       <Button color="error" onClick={handleDeleteBid} disabled={saving}>Delete</Button>
-                      <Button variant="outlined" onClick={() => { setEditMode(true); setEditAmount(String(selectedBid.amount)); }}>Edit Bid</Button>
+                      <Button variant="outlined" onClick={() => { setEditMode(true); setEditAmount(String(selectedBid.bidAmount)); }}>Edit Bid</Button>
                     </>
                   )}
                   <Button onClick={() => { setBidDialogOpen(false); setEditMode(false); }}>Close</Button>
@@ -340,7 +340,7 @@ export default function VendorAnalyticsPage() {
                         <TableCell sx={{ fontWeight: 500 }}>{bid.round?.procurement?.title || 'N/A'}</TableCell>
                         <TableCell>{bid.round?.procurement?.requestNo || '—'}</TableCell>
                         <TableCell align="right">Round {bid.round?.roundNo || '—'}</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700, color: 'primary.main' }}>${Number(bid.amount).toLocaleString()}</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700, color: 'primary.main' }}>${Number(bid.bidAmount).toLocaleString()}</TableCell>
                         <TableCell align="right">{new Date(bid.submittedAt).toLocaleString()}</TableCell>
                         <TableCell align="center">
                           <Chip label={bid.round?.status || '—'} size="small" color={bid.round?.status === 'OPEN' ? 'success' : bid.round?.status === 'CLOSED' ? 'default' : 'info'} />
