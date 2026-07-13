@@ -113,13 +113,18 @@ export class FilesService {
             const arr = await cloudRes.arrayBuffer();
             return { buffer: Buffer.from(arr), contentType: file.mimeType, fileName: file.fileName };
           }
+          const cloudErr = await cloudRes.text().catch(() => '') || '';
           const fallbackRes = await fetch(file.storagePath);
           if (fallbackRes.ok) {
             const arr = await fallbackRes.arrayBuffer();
             return { buffer: Buffer.from(arr), contentType: file.mimeType, fileName: file.fileName };
           }
+          const fallbackErr = await fallbackRes.text().catch(() => '') || '';
+          return { error: `signed(${cloudRes.status}):${cloudErr.slice(0,100)} public(${fallbackRes.status}):${fallbackErr.slice(0,100)}` };
         }
-      } catch { /* fallback */ }
+      } catch (e: any) {
+        return { error: `exception: ${e?.message || e}`.slice(0, 200) };
+      }
     }
 
     if (fs.existsSync(file.storagePath)) {
@@ -127,7 +132,7 @@ export class FilesService {
       return { buffer, contentType: file.mimeType, fileName: file.fileName };
     }
 
-    return { error: 'File not available' };
+    return { error: 'File not available (not found locally or on cloud)' };
   }
 
   async listFiles(userId: string) {
