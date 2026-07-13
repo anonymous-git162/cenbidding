@@ -96,20 +96,24 @@ export class FilesService {
     const file = await this.getFile(id, userId, userRole);
     if (!file) return null;
 
-    // For Cloudinary URLs, try to get a signed URL
+    // For Cloudinary URLs, use uploader.explicit to make file public and get accessible URL
     if (file.storagePath.startsWith('http') && this.cloudinaryEnabled) {
       try {
         const urlObj = new URL(file.storagePath);
         const pathParts = urlObj.pathname.split('/');
-        // URL format: /{cloud_name}/{resource_type}/upload/{public_id_with_ext}
         const uploadIdx = pathParts.indexOf('upload');
         if (uploadIdx >= 0 && uploadIdx + 1 < pathParts.length) {
           const resourceType = pathParts[uploadIdx - 1] || 'image';
           const publicIdWithExt = pathParts.slice(uploadIdx + 1).join('/');
-          // Don't strip extension - Cloudinary public ID includes the full filename
-          const publicId = publicIdWithExt;
-          const signedUrl = cloudinary.url(publicId, { resource_type: resourceType, sign_url: true, secure: true });
-          return { redirect: signedUrl };
+          // Use explicit to set access_mode to public
+          await cloudinary.uploader.explicit(publicIdWithExt, {
+            type: 'upload',
+            resource_type: resourceType as 'image' | 'video' | 'raw' | 'auto',
+            access_mode: 'public',
+          });
+          // Now generate a fresh URL
+          const freshUrl = cloudinary.url(publicIdWithExt, { resource_type: resourceType, secure: true });
+          return { redirect: freshUrl };
         }
       } catch { /* fallback */ }
       return { redirect: file.storagePath };
