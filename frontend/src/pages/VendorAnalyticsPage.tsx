@@ -28,6 +28,7 @@ interface VendorAnalytics {
 }
 
 export default function VendorAnalyticsPage() {
+  const fmt = (v: any) => { const n = Number(v); return isNaN(n) ? '—' : n.toLocaleString(); };
   const [analytics, setAnalytics] = useState<VendorAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<any[]>([]);
@@ -95,7 +96,7 @@ export default function VendorAnalyticsPage() {
 
   const handleDeleteBid = async () => {
     if (!selectedBid) return;
-    if (!window.confirm(`Delete your bid of $${Number(selectedBid.bidAmount).toLocaleString()}? This cannot be undone.`)) return;
+    if (!window.confirm(`Delete your bid of $${fmt(selectedBid.bidAmount)}? This cannot be undone.`)) return;
     setSaving(true);
     try {
       await api.delete(`/ebidding/bids/${selectedBid.id}`);
@@ -189,7 +190,7 @@ export default function VendorAnalyticsPage() {
                   <Box>
                     <Typography variant="body2" fontWeight={500}>{bid.round?.procurement?.title || 'N/A'}</Typography>
                     <Typography variant="caption" color="text.secondary">
-                      Round {bid.round?.roundNo} | ${Number(bid.bidAmount).toLocaleString()} | {new Date(bid.submittedAt).toLocaleDateString()}
+                      Round {bid.round?.roundNo} | ${fmt(bid.bidAmount)} | {new Date(bid.submittedAt).toLocaleDateString()}
                     </Typography>
                   </Box>
                   <Chip label={bid.round?.status || '—'} size="small" color={bid.round?.status === 'OPEN' ? 'success' : 'default'} />
@@ -237,7 +238,7 @@ export default function VendorAnalyticsPage() {
                           inputProps={{ min: 0 }}
                         />
                       ) : (
-                        <Typography variant="body2" fontWeight={700} color="primary.main">${Number(selectedBid.bidAmount).toLocaleString()}</Typography>
+                        <Typography variant="body2" fontWeight={700} color="primary.main">${fmt(selectedBid.bidAmount)}</Typography>
                       )}
                     </Box>
                     <Box>
@@ -340,7 +341,7 @@ export default function VendorAnalyticsPage() {
                         <TableCell sx={{ fontWeight: 500 }}>{bid.round?.procurement?.title || 'N/A'}</TableCell>
                         <TableCell>{bid.round?.procurement?.requestNo || '—'}</TableCell>
                         <TableCell align="right">Round {bid.round?.roundNo || '—'}</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700, color: 'primary.main' }}>${Number(bid.bidAmount).toLocaleString()}</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700, color: 'primary.main' }}>${fmt(bid.bidAmount)}</TableCell>
                         <TableCell align="right">{new Date(bid.submittedAt).toLocaleString()}</TableCell>
                         <TableCell align="center">
                           <Chip label={bid.round?.status || '—'} size="small" color={bid.round?.status === 'OPEN' ? 'success' : bid.round?.status === 'CLOSED' ? 'default' : 'info'} />
