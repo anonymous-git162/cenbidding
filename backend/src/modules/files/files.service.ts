@@ -113,10 +113,13 @@ export class FilesService {
             type: 'upload', format: ext, sign_url: true, secure: true,
             ...(ver && { version: ver }),
           });
-          return { redirect: signedUrl };
+          const cloudRes = await fetch(signedUrl);
+          if (cloudRes.ok) {
+            const arr = await cloudRes.arrayBuffer();
+            return { buffer: Buffer.from(arr), contentType: file.mimeType, fileName: file.fileName };
+          }
         }
       } catch { /* fallback */ }
-      return { redirect: file.storagePath };
     }
 
     if (file.storagePath.startsWith('http')) {
