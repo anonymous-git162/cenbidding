@@ -364,7 +364,16 @@ export default function ProcurementDetailPage() {
                             <Icon name="Description" sx={{ fontSize: 20, color: 'text.secondary' }} />
                             <Typography variant="body2" sx={{ flex: 1 }}>{file.fileName}</Typography>
                             <Typography variant="caption" color="text.secondary">{(file.fileSize / 1024).toFixed(0)}KB</Typography>
-                            <Button size="small" href={`/api/files/${file.id}`} target="_blank" startIcon={<Icon name="Download" />}>Download</Button>
+                            <Button size="small" startIcon={<Icon name="Download" />} onClick={async () => {
+                              try {
+                                const res = await api.get(`/files/${file.id}`, { responseType: 'blob' });
+                                const url = URL.createObjectURL(new Blob([res.data]));
+                                const a = document.createElement('a');
+                                a.href = url; a.download = file.fileName;
+                                document.body.appendChild(a); a.click(); a.remove();
+                                URL.revokeObjectURL(url);
+                              } catch {}
+                            }}>Download</Button>
                           </Box>
                         ))}
                       </Box>
@@ -493,24 +502,31 @@ export default function ProcurementDetailPage() {
                               {role !== 'VENDOR' && <TableCell>{sub.vendor?.companyName || '—'}</TableCell>}
                                <TableCell>${Number(sub.price).toLocaleString()}</TableCell>
                                <TableCell>
-                                 {sub.files && sub.files.length > 0 ? (
-                                   <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                                     {sub.files.map((file: any) => (
-                                       <Tooltip key={file.id} title={file.fileName}>
-                                         <Button
-                                           size="small"
-                                           variant="outlined"
-                                           startIcon={<Icon name="Description" />}
-                                           href={`/api/files/${file.id}`}
-                                           target="_blank"
-                                           rel="noopener noreferrer"
-                                         >
-                                           {file.fileName.split('.').pop()}
-                                         </Button>
-                                       </Tooltip>
-                                     ))}
-                                   </Box>
-                                 ) : (
+                      {sub.files && sub.files.length > 0 ? (
+                                    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                                      {sub.files.map((file: any) => (
+                                        <Tooltip key={file.id} title={file.fileName}>
+                                          <Button
+                                            size="small"
+                                            variant="outlined"
+                                            startIcon={<Icon name="Description" />}
+                                            onClick={async () => {
+                                              try {
+                                                const res = await api.get(`/files/${file.id}`, { responseType: 'blob' });
+                                                const url = URL.createObjectURL(new Blob([res.data]));
+                                                const a = document.createElement('a');
+                                                a.href = url; a.download = file.fileName;
+                                                document.body.appendChild(a); a.click(); a.remove();
+                                                URL.revokeObjectURL(url);
+                                              } catch {}
+                                            }}
+                                          >
+                                            {file.fileName.split('.').pop()}
+                                          </Button>
+                                        </Tooltip>
+                                      ))}
+                                    </Box>
+                                  ) : (
                                    '—'
                                  )}
                                </TableCell>

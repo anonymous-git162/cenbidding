@@ -92,32 +92,20 @@ export class FilesService {
     return file;
   }
 
-  async downloadFile(id: string, userId?: string, userRole?: string): Promise<{ buffer: Buffer; contentType: string; fileName: string } | { redirect: string } | { error: string } | null> {
+  async downloadFile(id: string, userId?: string, userRole?: string): Promise<{ buffer: Buffer; contentType: string; fileName: string } | { error: string } | null> {
     const file = await this.getFile(id, userId, userRole);
     if (!file) return null;
 
-    if (file.storagePath.startsWith('http') && this.cloudinaryEnabled) {
+    // ponytail: proxy remote files through backend to avoid Cloudinary auth & new-tab cookie issues
+    if (file.storagePath.startsWith('http')) {
       try {
-        const urlObj = new URL(file.storagePath);
-        const pathParts = urlObj.pathname.split('/');
-        const uploadIdx = pathParts.indexOf('upload');
-        if (uploadIdx >= 0 && uploadIdx + 1 < pathParts.length) {
-          const resourceType = pathParts[uploadIdx - 1] || 'image';
-          const publicIdWithExt = pathParts.slice(uploadIdx + 1).join('/');
-          const signedUrl = cloudinary.url(publicIdWithExt, {
-            resource_type: resourceType as 'image' | 'video' | 'raw' | 'auto',
-            type: 'upload',
-            sign_url: true,
-            secure: true,
-          });
-          return { redirect: signedUrl };
+        const res = await fetch(file.storagePath);
+        if (res.ok) {
+          const arr = await res.arrayBuffer();
+          return { buffer: Buffer.from(arr), contentType: file.mimeType, fileName: file.fileName };
         }
       } catch { /* fallback */ }
-      return { redirect: file.storagePath };
-    }
-
-    if (file.storagePath.startsWith('http')) {
-      return { redirect: file.storagePath };
+      return { error: 'File not available' };
     }
 
     if (fs.existsSync(file.storagePath)) {
