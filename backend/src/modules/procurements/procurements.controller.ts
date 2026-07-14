@@ -44,6 +44,36 @@ export class ProcurementsController {
     return this.procurementsService.getStats();
   }
 
+  @Get('admin/list')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'List all procurements for admin cleanup' })
+  async adminList() {
+    return this.prisma.procurement.findMany({
+      select: { id: true, requestNo: true, title: true, status: true, createdAt: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  @Delete('admin/:id')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Delete a procurement (admin cleanup)' })
+  async adminDelete(@Param('id') id: string) {
+    // Delete related records first
+    await this.prisma.ebiddingResponse.deleteMany({ where: { round: { procurementId: id } } });
+    await this.prisma.ebiddingRound.deleteMany({ where: { procurementId: id } });
+    await this.prisma.evaluatorReview.deleteMany({ where: { procurementId: id } });
+    await this.prisma.evaluatorAssignment.deleteMany({ where: { procurementId: id } });
+    await this.prisma.evaluationConsolidation.deleteMany({ where: { procurementId: id } });
+    await this.prisma.rfqSubmission.deleteMany({ where: { procurementId: id } });
+    await this.prisma.vendorInvitation.deleteMany({ where: { procurementId: id } });
+    await this.prisma.approval.deleteMany({ where: { procurementId: id } });
+    await this.prisma.notification.deleteMany({ where: { entityType: 'Procurement', entityId: id } });
+    await this.prisma.procurementResult.deleteMany({ where: { procurementId: id } });
+    await this.prisma.procurementTimeline.deleteMany({ where: { procurementId: id } });
+    await this.prisma.procurement.delete({ where: { id } });
+    return { message: 'Procurement deleted' };
+  }
+
   @Get('currencies')
   @ApiOperation({ summary: 'Get distinct currencies used in procurements' })
   getCurrencies() {
