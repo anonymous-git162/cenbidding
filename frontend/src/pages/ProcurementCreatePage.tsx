@@ -22,7 +22,10 @@ const INITIAL_FORM = {
   currency: 'USD',
   budgetEstimate: '',
   justification: '',
+  language: 'English',
 };
+
+const LANGUAGES = ['English', 'Thai'];
 
 const REQUEST_TYPES = [
   { value: 'RFI', label: 'RFI', subtitle: 'Request for Information', description: 'Gather information from vendors before making procurement decisions', color: TYPE_COLORS.RFI, icon: 'Search' },
@@ -72,6 +75,7 @@ export default function ProcurementCreatePage() {
         category: form.category || 'General',
         title: form.title,
         description: form.description,
+        language: form.language,
       });
       setAiTor(res.data.tor);
       setAiDialogOpen(true);
@@ -223,15 +227,17 @@ export default function ProcurementCreatePage() {
               sx={{ flex: 1 }}
             />
           </Box>
-          <Button
-            variant="outlined"
-            startIcon={<Icon name="Search" />}
-            onClick={handleWriteTor}
-            disabled={aiLoading || !form.title}
-            sx={{ mt: 1 }}
-          >
-            {aiLoading ? 'Generating TOR...' : 'AI Write TOR'}
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <InputLabel>Language</InputLabel>
+              <Select value={form.language} label="Language" onChange={(e) => setForm({ ...form, language: e.target.value })}>
+                {LANGUAGES.map((l) => <MenuItem key={l} value={l}>{l}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <Button variant="outlined" startIcon={<Icon name="Search" />} onClick={handleWriteTor} disabled={aiLoading || !form.title}>
+              {aiLoading ? 'Generating TOR...' : 'AI Write TOR'}
+            </Button>
+          </Box>
         </Grid>
         <Grid item xs={12}>
           <Tooltip title="Explain the business problem this procurement will solve" placement="top">

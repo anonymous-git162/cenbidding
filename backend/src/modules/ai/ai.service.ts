@@ -6,6 +6,7 @@ interface TorRequest {
   category: string;
   title: string;
   description: string;
+  language?: string;
 }
 
 interface VendorScoreRequest {
@@ -183,6 +184,7 @@ export class AiService {
   }
 
   private buildTorPrompt(input: TorRequest): string {
+    const lang = input.language || 'English';
     return `You are a procurement expert for Centara Hotels & Resorts. Generate a professional Terms of Reference (TOR) document for the following procurement request.
 
 Request Type: ${input.requestType}
@@ -191,7 +193,7 @@ Title: ${input.title}
 Description: ${input.description || 'No description provided'}
 
 Requirements:
-1. Write in professional business English
+1. Write in professional business ${lang}
 2. Include all standard TOR sections (Background, Objectives, Scope, Deliverables, Evaluation Criteria, Timeline)
 3. Tailor the content to the ${input.category} category
 4. Be specific and actionable

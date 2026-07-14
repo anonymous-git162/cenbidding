@@ -19,6 +19,7 @@ export class AiController {
       category: string;
       title: string;
       description: string;
+      language?: string;
     },
   ) {
     return this.aiService.writeTor(body as any);
