@@ -165,7 +165,7 @@ export default function EvaluationPage() {
       } catch { /* ignore */ }
     }
     const criterionScores = b && keys.every(k => k in b) ? keys.map((k, i) => ({ criteriaIndex: i, score: b[k].raw ?? 50 })) : undefined;
-    setScores({ ...scores, [aiDialog.vendorId]: { score: aiDialog.score, comment: `AI: ${aiDialog.reasoning.split('\n')[0]}`, criterionScores } });
+    setScores(prev => ({ ...prev, [aiDialog.vendorId]: { score: aiDialog.score, comment: `AI: ${aiDialog.reasoning.split('\n')[0]}`, criterionScores } }));
     setAiDialog({ ...aiDialog, open: false });
   };
 
@@ -285,11 +285,14 @@ export default function EvaluationPage() {
                                             <Box key={ci} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                                               <Typography variant="caption" sx={{ minWidth: 80, fontSize: 11 }}>{cr.name}</Typography>
                                               <Slider value={cs?.score || 50} min={0} max={cr.maxScore || 100} step={5}
-                                                onChange={(_, v) => {
-                                                  const css = [...(s.criterionScores || [])];
-                                                  css[ci] = { criteriaIndex: ci, score: v as number };
-                                                  const newWeighted = computeWeightedScore(css);
-                                                  setScores({ ...scores, [sub.vendorId]: { ...s, criterionScores: css, score: newWeighted } });
+                                                onChangeCommitted={(_, v) => {
+                                                  setScores(prev => {
+                                                    const s = prev[sub.vendorId] || { score: 50, comment: '' };
+                                                    const css = [...(s.criterionScores || [])];
+                                                    css[ci] = { criteriaIndex: ci, score: v as number };
+                                                    const newWeighted = computeWeightedScore(css);
+                                                    return { ...prev, [sub.vendorId]: { ...s, criterionScores: css, score: newWeighted } };
+                                                  });
                                                 }}
                                                 sx={{ width: 120 }} />
                                               <Typography variant="caption" sx={{ minWidth: 20 }}>{cs?.score || 50}</Typography>
@@ -300,7 +303,7 @@ export default function EvaluationPage() {
                                     ) : (
                                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                         <Slider value={s.score} min={0} max={100} step={5}
-                                          onChange={(_, v) => setScores({ ...scores, [sub.vendorId]: { ...s, score: v as number } })}
+                                          onChangeCommitted={(_, v) => setScores(prev => ({ ...prev, [sub.vendorId]: { ...prev[sub.vendorId], score: v as number } }))}
                                           sx={{ width: 150 }} />
                                         <Typography variant="body2" sx={{ minWidth: 30 }}>{s.score}</Typography>
                                       </Box>
@@ -312,7 +315,7 @@ export default function EvaluationPage() {
                                   <TableCell>
                                     <TextField size="small" multiline rows={5} placeholder="Add comment..."
                                       value={s.comment || ''}
-                                      onChange={(e) => setScores({ ...scores, [sub.vendorId]: { ...s, comment: e.target.value } })} />
+                                      onChange={(e) => setScores(prev => ({ ...prev, [sub.vendorId]: { ...prev[sub.vendorId], comment: e.target.value } }))} />
                                   </TableCell>
                                   <TableCell>
                                     <Box sx={{ display: 'flex', gap: 1 }}>

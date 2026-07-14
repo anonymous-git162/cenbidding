@@ -70,7 +70,7 @@ describe('BiddingRoomPage', () => {
     expect(mockGet).toHaveBeenCalledWith('/procurements', expect.objectContaining({ params: { limit: 50 } }));
     await waitFor(() => {
       expect(screen.getByText('E-Bidding Room')).toBeInTheDocument();
-      expect(screen.getByText('RFP-001 - Office Supplies')).toBeInTheDocument();
+      expect(screen.getByText('RFP-001 - Office Supplies [CLOSED]')).toBeInTheDocument();
     });
   });
 
@@ -119,7 +119,7 @@ describe('BiddingRoomPage', () => {
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByText('RFP-001 - Office Supplies')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('RFP-001 - Office Supplies [CLOSED]')).toBeInTheDocument());
 
     const select = screen.getByLabelText('Select Procurement');
     await userEvent.selectOptions(select, 'proc-1');
@@ -154,7 +154,7 @@ describe('BiddingRoomPage', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText('RFP-001 - Office Supplies')).toBeInTheDocument();
+      expect(screen.getByText('RFP-001 - Office Supplies [CLOSED]')).toBeInTheDocument();
     });
     expect(screen.queryByText('Create Round')).not.toBeInTheDocument();
   });
@@ -180,7 +180,7 @@ describe('BiddingRoomPage', () => {
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByText('RFP-001 - Office Supplies')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('RFP-001 - Office Supplies [CLOSED]')).toBeInTheDocument());
 
     const select = screen.getByLabelText('Select Procurement');
     await userEvent.selectOptions(select, 'proc-1');
@@ -222,7 +222,7 @@ describe('BiddingRoomPage', () => {
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByText('RFP-001 - Office Supplies')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('RFP-001 - Office Supplies [CLOSED]')).toBeInTheDocument());
 
     const select = screen.getByLabelText('Select Procurement');
     await userEvent.selectOptions(select, 'proc-1');
@@ -251,7 +251,7 @@ describe('BiddingRoomPage', () => {
     });
 
     renderPage();
-    await waitFor(() => expect(screen.getByText('RFP-001 - Office Supplies')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('RFP-001 - Office Supplies [CLOSED]')).toBeInTheDocument());
 
     const select = screen.getByLabelText('Select Procurement');
     await userEvent.selectOptions(select, 'proc-1');
@@ -276,7 +276,7 @@ describe('BiddingRoomPage', () => {
     mockPost.mockRejectedValue({ response: { data: { message: 'Failed to open round' } } });
 
     renderPage();
-    await waitFor(() => expect(screen.getByText('RFP-001 - Office Supplies')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('RFP-001 - Office Supplies [CLOSED]')).toBeInTheDocument());
 
     const select = screen.getByLabelText('Select Procurement');
     await userEvent.selectOptions(select, 'proc-1');
