@@ -233,7 +233,7 @@ export default function ProcurementListPage() {
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
-          <Typography variant="h5" fontWeight={700}>Procurements</Typography>
+          <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>Procurements</Typography>
           <Typography variant="body2" color="text.secondary">
             {loading ? 'Loading...' : `${total} result${total !== 1 ? 's' : ''}`}
             {activeCount > 0 && ` (filtered from all)`}
@@ -369,12 +369,12 @@ export default function ProcurementListPage() {
                   { key: 'requestNo', label: 'Request', width: 160 },
                   { key: 'title', label: 'Title' },
                   { key: 'requestType', label: 'Type', width: 100 },
-                  { key: 'property', label: 'Property', width: 140 },
+                  { key: 'property', label: 'Property', width: 140, hideOnMobile: true },
                   { key: 'status', label: 'Status', width: 150 },
-                  { key: 'budgetEstimate', label: 'Budget', width: 110, align: 'right' as const },
-                  { key: 'createdAt', label: 'Date', width: 100 },
+                  { key: 'budgetEstimate', label: 'Budget', width: 110, align: 'right' as const, hideOnMobile: true },
+                  { key: 'createdAt', label: 'Date', width: 100, hideOnMobile: true },
                 ].map((col) => (
-                  <TableCell key={col.key} sx={{ fontWeight: 600, color: 'text.secondary', width: col.width, textAlign: col.align }}>
+                  <TableCell key={col.key} sx={{ fontWeight: 600, color: 'text.secondary', width: col.width, textAlign: col.align, display: col.hideOnMobile ? { xs: 'none', sm: 'table-cell' } : undefined }}>
                     {SORT_COLUMNS.find((s) => s.value === col.key) ? (
                       <TableSortLabel
                         active={filters.sortBy === col.key}
@@ -409,6 +409,9 @@ export default function ProcurementListPage() {
               {items.map((item) => (
                 <TableRow
                   key={item.id} hover sx={{ cursor: 'pointer', '&:last-child td': { border: 0 } }}
+                  tabIndex={0}
+                  role="button"
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/procurements/${item.id}`); } }}
                   onClick={() => navigate(`/procurements/${item.id}`)}
                 >
                   <TableCell>
@@ -429,14 +432,14 @@ export default function ProcurementListPage() {
                     {item.category && <Typography variant="caption" color="text.secondary">{item.category}</Typography>}
                   </TableCell>
                   <TableCell><Chip label={item.requestType} size="small" variant="outlined" sx={{ fontWeight: 500 }} /></TableCell>
-                  <TableCell><Typography variant="body2" color="text.secondary">{item.property?.name || 'General'}</Typography></TableCell>
+                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}><Typography variant="body2" color="text.secondary">{item.property?.name || 'General'}</Typography></TableCell>
                   <TableCell><StatusBadge status={item.status} /></TableCell>
-                  <TableCell sx={{ textAlign: 'right' }}>
+                  <TableCell sx={{ textAlign: 'right', display: { xs: 'none', sm: 'table-cell' } }}>
                     <Typography variant="body2" fontWeight={500}>
                       {item.budgetEstimate ? formatCurrency(Number(item.budgetEstimate), item.currency) : '—'}
                     </Typography>
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
                     <Typography variant="caption" color="text.secondary">
                       {new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })}
                     </Typography>

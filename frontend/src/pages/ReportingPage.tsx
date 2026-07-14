@@ -78,7 +78,7 @@ export default function ReportingPage() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
-          <Typography variant="h5" fontWeight={700}>Reports & Analytics</Typography>
+          <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>Reports & Analytics</Typography>
           <Typography variant="body2" color="text.secondary">Procurement performance overview</Typography>
         </Box>
         <Button variant="outlined" startIcon={<Icon name="Save" />} onClick={exportCSV}>Export CSV</Button>

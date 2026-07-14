@@ -87,7 +87,7 @@ export default function ProcurementEditPage() {
     <Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
         <Button startIcon={<Icon name="ArrowBack" />} onClick={() => navigate(`/procurements/${id}`)}>Back</Button>
-        <Typography variant="h5" fontWeight={700}>Edit Procurement</Typography>
+        <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>Edit Procurement</Typography>
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}

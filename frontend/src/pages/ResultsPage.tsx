@@ -90,7 +90,7 @@ export default function ResultsPage() {
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h5" fontWeight={700}>
+        <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
           {user?.role === 'VENDOR' ? 'My Results' : 'Procurement Results'}
         </Typography>
         <Chip label={`${filteredItems.length} result${filteredItems.length !== 1 ? 's' : ''}`} color="primary" />
@@ -186,10 +186,10 @@ export default function ResultsPage() {
               <TableRow sx={{ bgcolor: 'action.hover' }}>
                 <TableCell sx={{ fontWeight: 600 }}>Request No</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Title</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Budget</TableCell>
+                <TableCell sx={{ fontWeight: 600, display: { xs: 'none', sm: 'table-cell' } }}>Type</TableCell>
+                <TableCell sx={{ fontWeight: 600, display: { xs: 'none', sm: 'table-cell' } }}>Budget</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Created</TableCell>
+                <TableCell sx={{ fontWeight: 600, display: { xs: 'none', sm: 'table-cell' } }}>Created</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -197,15 +197,15 @@ export default function ResultsPage() {
               {filteredItems.map((item) => {
                 const typeColor = item.requestType === 'RFP' ? 'primary.main' : item.requestType === 'RFQ' ? 'warning.main' : 'text.secondary';
                 return (
-                  <TableRow key={item.id} hover sx={{ cursor: 'pointer' }} onClick={() => navigate(`/procurements/${item.id}`)}>
+                  <TableRow key={item.id} hover sx={{ cursor: 'pointer' }} tabIndex={0} role="button" onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/procurements/${item.id}`); } }} onClick={() => navigate(`/procurements/${item.id}`)}>
                     <TableCell sx={{ fontWeight: 600 }}>{item.requestNo}</TableCell>
                     <TableCell>{item.title}</TableCell>
-                    <TableCell>
+                    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
                       <Chip label={item.requestType} size="small" sx={{ bgcolor: `${typeColor}15`, color: typeColor, fontWeight: 600 }} />
                     </TableCell>
-                    <TableCell>{item.budgetEstimate ? `${item.currency === 'EUR' ? '€' : item.currency === 'GBP' ? '£' : item.currency === 'THB' ? '฿' : '$'}${Number(item.budgetEstimate).toLocaleString()} ${item.currency || 'USD'}` : '—'}</TableCell>
+                    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>{item.budgetEstimate ? `${item.currency === 'EUR' ? '€' : item.currency === 'GBP' ? '£' : item.currency === 'THB' ? '฿' : '$'}${Number(item.budgetEstimate).toLocaleString()} ${item.currency || 'USD'}` : '—'}</TableCell>
                     <TableCell><StatusBadge status={item.status} /></TableCell>
-                    <TableCell>{new Date(item.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>{new Date(item.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <Button size="small" startIcon={<Icon name="Visibility" />} onClick={(e) => { e.stopPropagation(); navigate(user?.role === 'VENDOR' ? `/results/${item.id}` : `/procurements/${item.id}`); }}>
                         View

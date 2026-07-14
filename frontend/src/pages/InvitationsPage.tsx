@@ -131,7 +131,7 @@ export default function InvitationsPage() {
     <Box>
       {loading && <LinearProgress sx={{ mb: 2, borderRadius: 1 }} />}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h5" fontWeight={700}>
+        <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
           {user?.role === 'VENDOR' ? 'My Invitations' : 'Vendor Invitations'}
         </Typography>
         {user?.role === 'PROCUREMENT' && (

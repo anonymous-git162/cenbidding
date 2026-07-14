@@ -55,7 +55,7 @@ export default function ResultDetailPage() {
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
-          <Typography variant="h5" fontWeight={700}>
+          <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
             {isVendor ? 'Your Result' : 'Procurement Result'}
           </Typography>
           <Typography variant="body2" color="text.secondary">

@@ -56,7 +56,7 @@ export default function ApprovalsPage() {
     <Box>
       {loading && <LinearProgress sx={{ mb: 2, borderRadius: 1 }} />}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h5" fontWeight={700}>
+        <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
           {isApprover ? 'Approval Inbox' : 'Pending Approvals'}
         </Typography>
       </Box>
@@ -71,11 +71,11 @@ export default function ApprovalsPage() {
               <TableRow sx={{ bgcolor: 'action.hover' }}>
                 <TableCell sx={{ fontWeight: 600 }}>Request No</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Title</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Requester</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Budget</TableCell>
+                <TableCell sx={{ fontWeight: 600, display: { xs: 'none', sm: 'table-cell' } }}>Type</TableCell>
+                <TableCell sx={{ fontWeight: 600, display: { xs: 'none', md: 'table-cell' } }}>Requester</TableCell>
+                <TableCell sx={{ fontWeight: 600, display: { xs: 'none', sm: 'table-cell' } }}>Budget</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Created</TableCell>
+                <TableCell sx={{ fontWeight: 600, display: { xs: 'none', sm: 'table-cell' } }}>Created</TableCell>
                 {isApprover && <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>}
               </TableRow>
             </TableHead>
@@ -83,16 +83,16 @@ export default function ApprovalsPage() {
               {items.map((item) => {
                 const typeColor = item.requestType === 'RFP' ? 'primary.main' : item.requestType === 'RFQ' ? 'warning.main' : 'text.secondary';
                 return (
-                  <TableRow key={item.id} hover sx={{ cursor: 'pointer' }} onClick={() => navigate(`/procurements/${item.id}`)}>
+                  <TableRow key={item.id} hover sx={{ cursor: 'pointer' }} tabIndex={0} role="button" onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/procurements/${item.id}`); } }} onClick={() => navigate(`/procurements/${item.id}`)}>
                     <TableCell sx={{ fontWeight: 600 }}>{item.requestNo}</TableCell>
                     <TableCell>{item.title}</TableCell>
-                    <TableCell>
+                    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
                       <Chip label={item.requestType} size="small" sx={{ bgcolor: 'action.hover', color: typeColor, fontWeight: 600 }} />
                     </TableCell>
-                    <TableCell>{item.requester?.fullName || '-'}</TableCell>
-                    <TableCell>{item.budgetEstimate ? `$${Number(item.budgetEstimate).toLocaleString()}` : '—'}</TableCell>
+                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{item.requester?.fullName || '-'}</TableCell>
+                    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>{item.budgetEstimate ? `$${Number(item.budgetEstimate).toLocaleString()}` : '—'}</TableCell>
                     <TableCell><StatusBadge status={item.status} /></TableCell>
-                    <TableCell>{new Date(item.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>{new Date(item.createdAt).toLocaleDateString()}</TableCell>
                     {isApprover && (
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <Button size="small" color="success" startIcon={<Icon name="CheckCircle" />} onClick={() => setDialog({ open: true, action: 'approve', id: item.id })}>Approve</Button>

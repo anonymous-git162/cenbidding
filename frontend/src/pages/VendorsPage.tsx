@@ -244,7 +244,7 @@ interface Department { id: string; name: string; }
     <Box>
       {loading && <LinearProgress sx={{ mb: 2 }} />}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h5" fontWeight={700}>User Management</Typography>
+        <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>User Management</Typography>
         <Button variant="contained" startIcon={<Icon name="Add" />} onClick={openCreateDialog}>Add User</Button>
       </Box>
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}

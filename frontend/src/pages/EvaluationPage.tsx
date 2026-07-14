@@ -196,7 +196,7 @@ export default function EvaluationPage() {
 
   return (
     <Box>
-      <Typography variant="h5" fontWeight={700} sx={{ mb: 3 }}>Evaluation Queue</Typography>
+      <Typography variant="h5" fontWeight={700} sx={{ mb: 3, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>Evaluation Queue</Typography>
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
       {success && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>{success}</Alert>}
 
@@ -261,8 +261,8 @@ export default function EvaluationPage() {
                               <TableCell>Vendor</TableCell>
                               <TableCell>Price</TableCell>
                               <TableCell>{criteria.length ? 'Per-Criterion Scores' : 'Your Score (0-100)'}</TableCell>
-                              <TableCell>Weighted</TableCell>
-                              <TableCell>Comment</TableCell>
+                              <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Weighted</TableCell>
+                              <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Comment</TableCell>
                               <TableCell>Action</TableCell>
                             </TableRow>
                           </TableHead>
@@ -309,10 +309,10 @@ export default function EvaluationPage() {
                                       </Box>
                                     )}
                                   </TableCell>
-                                  <TableCell>
+                                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
                                     <Chip label={weighted} size="small" color={weighted >= 80 ? 'success' : weighted >= 60 ? 'warning' : 'error'} />
                                   </TableCell>
-                                  <TableCell>
+                                  <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                                     <TextField size="small" multiline rows={5} placeholder="Add comment..."
                                       value={s.comment || ''}
                                       onChange={(e) => setScores(prev => ({ ...prev, [sub.vendorId]: { ...prev[sub.vendorId], comment: e.target.value } }))} />

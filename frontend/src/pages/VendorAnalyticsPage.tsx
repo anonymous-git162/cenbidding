@@ -138,7 +138,7 @@ export default function VendorAnalyticsPage() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
-          <Typography variant="h5" fontWeight={700}>Vendor Analytics</Typography>
+          <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>Vendor Analytics</Typography>
           <Typography variant="body2" color="text.secondary">{analytics.vendor.companyName} — Performance Dashboard</Typography>
         </Box>
       </Box>
@@ -340,7 +340,7 @@ export default function VendorAnalyticsPage() {
                   </TableHead>
                   <TableBody>
                     {myBids.map((bid: any) => (
-                      <TableRow key={bid.id} hover sx={{ cursor: 'pointer' }} onClick={() => { setSelectedBid(bid); setBidDialogOpen(true); }}>
+                      <TableRow key={bid.id} hover sx={{ cursor: 'pointer' }} tabIndex={0} role="button" onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedBid(bid); setBidDialogOpen(true); } }} onClick={() => { setSelectedBid(bid); setBidDialogOpen(true); }}>
                         <TableCell sx={{ fontWeight: 500 }}>{bid.round?.procurement?.title || 'N/A'}</TableCell>
                         <TableCell>{bid.round?.procurement?.requestNo || '—'}</TableCell>
                         <TableCell align="right">Round {bid.round?.roundNo || '—'}</TableCell>

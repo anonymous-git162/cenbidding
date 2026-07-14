@@ -77,7 +77,7 @@ export default function SubmissionsPage() {
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h5" fontWeight={700}>Submissions</Typography>
+        <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>Submissions</Typography>
         {user?.role === 'VENDOR' && (
           <Button variant="contained" startIcon={<Icon name="Add" />} onClick={() => setDialogOpen(true)}>New Submission</Button>
         )}

@@ -402,7 +402,7 @@ export default function ProcurementCreatePage() {
           <IconButton onClick={() => navigate('/procurements')}><Icon name="ArrowBack" /></IconButton>
         </Tooltip>
         <Box>
-          <Typography variant="h5" fontWeight={700}>New Procurement Request</Typography>
+          <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>New Procurement Request</Typography>
           <Typography variant="body2" color="text.secondary">Step {activeStep + 1} of {STEPS.length}</Typography>
         </Box>
       </Box>

@@ -76,9 +76,15 @@ export default function AppShell() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notifAnchorEl, setNotifAnchorEl] = useState<null | HTMLElement>(null);
   const [notifications, setNotifications] = useState<Array<{ id: string; title: string; message: string; read: boolean; link?: string }>>([]);
+  const [pendingCount, setPendingCount] = useState(0);
   const { on } = useSocket();
 
   useEffect(() => { loadNotifications(); }, [user?.role]);
+  useEffect(() => {
+    if (user?.role === 'APPROVER') {
+      api.get('/approval/inbox').then(r => setPendingCount(Array.isArray(r.data) ? r.data.length : 0)).catch(() => {});
+    }
+  }, [user?.role]);
 
   // Real-time notification listener
   useEffect(() => {
@@ -120,7 +126,11 @@ export default function AppShell() {
             onClick={() => { navigate(item.path); if (isMobile) setMobileOpen(false); }}
             sx={{ borderRadius: 1.5, mb: 0.5, '&.Mui-selected': { bgcolor: 'primary.main', color: 'white', '&:hover': { bgcolor: 'primary.dark' }, '& .MuiListItemIcon-root': { color: 'white' } } }}
           >
-            <ListItemIcon sx={{ minWidth: 40 }}><Icon name={item.icon} /></ListItemIcon>
+            <ListItemIcon sx={{ minWidth: 40 }}>
+              <Badge badgeContent={pendingCount} color="error" max={99} invisible={item.label !== 'Approval Inbox' || pendingCount === 0}>
+                <Icon name={item.icon} />
+              </Badge>
+            </ListItemIcon>
             <ListItemText primary={item.label} />
           </ListItemButton>
         ))}
@@ -147,7 +157,7 @@ export default function AppShell() {
           </IconButton>
           <Box sx={{ flex: 1 }} />
           <Tooltip title={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
-            <IconButton onClick={toggleTheme} sx={{ mr: 1, transition: 'transform 0.3s ease', '&:hover': { transform: 'rotate(30deg)' } }}>
+            <IconButton onClick={toggleTheme} sx={{ mr: 1, '@media (prefers-reduced-motion: no-preference)': { transition: 'transform 0.3s ease' }, '&:hover': { '@media (prefers-reduced-motion: no-preference)': { transform: 'rotate(30deg)' } } }}>
               <Icon name={mode === 'dark' ? 'LightMode' : 'DarkMode'} />
             </IconButton>
           </Tooltip>
@@ -156,7 +166,7 @@ export default function AppShell() {
               badgeContent={notifications.length}
               color="error"
               max={99}
-              sx={{ '& .MuiBadge-badge': { position: 'absolute', top: 4, right: 4, height: 20, minWidth: 20, borderRadius: 10, fontSize: 11, fontWeight: 700, border: '2px solid', borderColor: 'background.paper', bgcolor: 'error.main', animation: notifications.length > 0 ? 'bellPulse 2s ease-in-out infinite' : 'none' } }}
+              sx={{ '& .MuiBadge-badge': { position: 'absolute', top: 4, right: 4, height: 20, minWidth: 20, borderRadius: 10, fontSize: 11, fontWeight: 700, border: '2px solid', borderColor: 'background.paper', bgcolor: 'error.main', '@media (prefers-reduced-motion: no-preference)': { animation: notifications.length > 0 ? 'bellPulse 2s ease-in-out infinite' : 'none' } } }}
             >
               <Box sx={{ width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: notifications.length > 0 ? 'error.50' : 'transparent', transition: 'all 0.2s', '&:hover': { bgcolor: 'error.100' } }}>
                 <Icon name="Notifications" sx={{ color: notifications.length > 0 ? 'error.main' : 'text.secondary', fontSize: 22 }} />
