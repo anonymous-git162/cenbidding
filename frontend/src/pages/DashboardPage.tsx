@@ -208,7 +208,7 @@ export default function DashboardPage() {
 
       <Grid container spacing={2} sx={{ mb: 3 }}>
         {kpiCards.map((kpi) => (
-          <Grid item xs={4} sm={2} key={kpi.title}>
+          <Grid item xs={6} sm={4} md={2} key={kpi.title}>
             <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', '&:hover': { borderColor: kpi.color, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }, transition: 'all 0.2s', cursor: 'pointer' }} onClick={() => navigate(kpi.filter.startsWith('/') ? kpi.filter : `/procurements${kpi.filter}`)}>
               <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>

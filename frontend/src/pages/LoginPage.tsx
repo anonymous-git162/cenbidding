@@ -29,7 +29,7 @@ export default function LoginPage() {
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default', backgroundImage: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)` }}>
-      <Card sx={{ width: 420, mx: 2, boxShadow: '0 8px 32px rgba(0,0,0,0.12)' }}>
+      <Card sx={{ maxWidth: 420, width: '100%', mx: 2, boxShadow: '0 8px 32px rgba(0,0,0,0.12)' }}>
         <CardContent sx={{ p: 4 }}>
           <Box sx={{ textAlign: 'center', mb: 4 }}>
             <Box sx={{ width: 56, height: 56, borderRadius: 2, bgcolor: 'primary.main', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>

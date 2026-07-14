@@ -1,4 +1,5 @@
 import { sanitizeCSVCell, downloadCSV } from '../utils/csv';
+import { STATUS_COLORS, TYPE_COLORS } from '../utils/statusColors';
 import { Icon } from '../components/Icon';
 import { useEffect, useState } from 'react';
 import {
@@ -22,15 +23,6 @@ interface Stats {
   byMonth: Array<{ month: string; count: number; budget: number }>;
   recentActivity: Array<{ action: string; entityType: string; createdAt: string; actorRole: string }>;
 }
-
-const STATUS_COLORS: Record<string, string> = {
-  DRAFT: '#6B7280', SUBMITTED: '#2563EB', UNDER_PROCUREMENT_REVIEW: '#F59E0B',
-  APPROVED: '#10B981', RFP_PUBLISHED: '#2563EB', RFQ_OPEN: '#8B5CF6',
-  BIDDING_OPEN: '#EC4899', UNDER_EVALUATION: '#F97316', PENDING_APPROVAL: '#F59E0B',
-  COMPLETED: '#16A34A', REJECTED: '#DC2626', RETURNED_FOR_REVISION: '#EF4444',
-};
-
-const TYPE_COLORS: Record<string, string> = { RFP: '#2563EB', RFQ: '#F59E0B', RFI: '#6B7280' };
 
 export default function ReportingPage() {
   const theme = useTheme();

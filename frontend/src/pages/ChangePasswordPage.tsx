@@ -32,6 +32,7 @@ export default function ChangePasswordPage() {
     try {
       await api.post('/auth/change-password', { currentPassword, newPassword });
       setSuccess('Password changed successfully');
+      setTimeout(() => setSuccess(''), 3000);
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -44,7 +45,7 @@ export default function ChangePasswordPage() {
 
   return (
     <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-      <Card sx={{ width: 400 }}>
+      <Card elevation={0} sx={{ maxWidth: 400, width: '100%', border: '1px solid', borderColor: 'divider' }}>
         <CardContent>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
             <IconButton onClick={() => navigate(-1)}>
@@ -58,7 +59,7 @@ export default function ChangePasswordPage() {
 
           <form onSubmit={handleSubmit}>
             <TextField fullWidth label="Current Password" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} sx={{ mb: 2 }} required />
-            <TextField fullWidth label="New Password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} helperText="At least 6 characters" sx={{ mb: 2 }} required />
+            <TextField fullWidth label="New Password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} helperText="At least 8 characters with uppercase, lowercase, and number" sx={{ mb: 2 }} required />
             <TextField fullWidth label="Confirm New Password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} sx={{ mb: 3 }} required />
             <Button fullWidth variant="contained" type="submit" disabled={loading}>
               {loading ? 'Changing...' : 'Change Password'}

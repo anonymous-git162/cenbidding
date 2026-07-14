@@ -4,7 +4,7 @@ import {
   Box, Card, CardContent, Typography, Button, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Chip, Dialog, DialogTitle, DialogContent, DialogActions,
   TextField, Alert, IconButton, Tooltip, FormControl, InputLabel, Select, MenuItem,
-  InputAdornment, FormControlLabel, Checkbox,
+  InputAdornment, FormControlLabel, Checkbox, LinearProgress,
 } from '@mui/material';
 import api from '../services/api';
 
@@ -24,6 +24,7 @@ interface Department { id: string; name: string; }
  export default function VendorsPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [pendingVendors, setPendingVendors] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
@@ -47,6 +48,7 @@ interface Department { id: string; name: string; }
   useEffect(() => { load(); loadPending(); loadProperties(); }, [searchQuery, roleFilter, statusFilter, page, rowsPerPage]);
 
   const load = async () => {
+    setLoading(true);
     try {
       const params: any = { limit: rowsPerPage, page: page + 1 };
       if (searchQuery) params.search = searchQuery;
@@ -59,6 +61,8 @@ interface Department { id: string; name: string; }
       setTotal(res.data.meta?.total || 0);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -120,6 +124,7 @@ interface Department { id: string; name: string; }
       const res = await api.post('/users', payload);
       setCreatedUser({ ...res.data, password: form.password });
       setSuccess('User created successfully');
+      setTimeout(() => setSuccess(''), 3000);
     setForm({ email: '', password: '', fullName: '', role: 'REQUESTER', propertyId: '', departmentId: '', managerId: '', companyName: '', newPassword: '', confirmPassword: '', isActive: true });
       load();
     } catch (err: any) {
@@ -156,6 +161,7 @@ interface Department { id: string; name: string; }
       if (form.newPassword) payload.password = form.newPassword;
       await api.patch(`/users/${editingUser.id}`, payload);
       setSuccess('User updated successfully');
+      setTimeout(() => setSuccess(''), 3000);
       setDialogOpen(false);
       setEditMode(false);
       setEditingUser(null);
@@ -236,6 +242,7 @@ interface Department { id: string; name: string; }
 
   return (
     <Box>
+      {loading && <LinearProgress sx={{ mb: 2 }} />}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h5" fontWeight={700}>User Management</Typography>
         <Button variant="contained" startIcon={<Icon name="Add" />} onClick={openCreateDialog}>Add User</Button>
@@ -324,8 +331,8 @@ interface Department { id: string; name: string; }
                     <TableCell>{new Date(v.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell align="right">
                       <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
-                        <Button size="small" variant="contained" color="success" onClick={async () => { try { await api.post(`/vendors/${v.id}/approve`); loadPending(); load(); } catch {} }}>Approve</Button>
-                        <Button size="small" variant="outlined" color="error" onClick={async () => { try { await api.post(`/vendors/${v.id}/reject`); loadPending(); load(); } catch {} }}>Reject</Button>
+                        <Button size="small" variant="contained" color="success" onClick={async () => { try { await api.post(`/vendors/${v.id}/approve`); loadPending(); load(); } catch { setError('Failed to approve vendor'); setTimeout(() => setError(''), 3000); } }}>Approve</Button>
+                        <Button size="small" variant="outlined" color="error" onClick={async () => { try { await api.post(`/vendors/${v.id}/reject`); loadPending(); load(); } catch { setError('Failed to reject vendor'); setTimeout(() => setError(''), 3000); } }}>Reject</Button>
                       </Box>
                     </TableCell>
                   </TableRow>
@@ -337,7 +344,7 @@ interface Department { id: string; name: string; }
       )}
 
       {/* Users Table */}
-      <Card>
+      <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
         <TableContainer>
           <Table>
             <TableHead>
@@ -509,7 +516,7 @@ interface Department { id: string; name: string; }
               {editMode && (
                 <>
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1, mt: 1 }}>Change Password (leave blank to keep current)</Typography>
-                  <TextField fullWidth label="New Password" type="password" value={form.newPassword} onChange={(e) => setForm({ ...form, newPassword: e.target.value })} error={form.newPassword !== '' && !isValidPassword(form.newPassword)} helperText={form.newPassword !== '' && !isValidPassword(form.newPassword) ? 'Password must be at least 6 characters' : ''} sx={{ mb: 2 }} />
+                  <TextField fullWidth label="New Password" type="password" value={form.newPassword} onChange={(e) => setForm({ ...form, newPassword: e.target.value })} error={form.newPassword !== '' && !isValidPassword(form.newPassword)} helperText={form.newPassword !== '' && !isValidPassword(form.newPassword) ? 'Password must be at least 8 characters' : ''} sx={{ mb: 2 }} />
                   <TextField fullWidth label="Confirm Password" type="password" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} error={form.newPassword !== '' && form.newPassword !== form.confirmPassword} helperText={form.newPassword !== '' && form.newPassword !== form.confirmPassword ? 'Passwords do not match' : ''} sx={{ mb: 2 }} />
                   <FormControlLabel
                     control={<Checkbox checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} color="success" />}

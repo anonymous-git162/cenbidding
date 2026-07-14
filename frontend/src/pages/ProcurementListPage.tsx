@@ -4,32 +4,33 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Box, Card, CardContent, Typography, Button, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, TextField, MenuItem, Select, FormControl, InputLabel, TablePagination,
-  InputAdornment, Chip, IconButton, Tooltip, LinearProgress, Collapse, TableSortLabel,
+  InputAdornment, Chip, IconButton, Tooltip, LinearProgress, Collapse, TableSortLabel, Alert,
 } from '@mui/material';
 import { sanitizeCSVCell, downloadCSV } from '../utils/csv';
+import { STATUS_COLORS, TYPE_COLORS } from '../utils/statusColors';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import StatusBadge from '../components/StatusBadge';
 
 const STATUS_OPTIONS = [
-  { value: 'DRAFT', label: 'Draft', color: '#6B7280' },
-  { value: 'SUBMITTED', label: 'Submitted', color: '#2563EB' },
-  { value: 'UNDER_PROCUREMENT_REVIEW', label: 'Under Review', color: '#F59E0B' },
-  { value: 'RETURNED_FOR_REVISION', label: 'Returned', color: '#EF4444' },
-  { value: 'APPROVED', label: 'Approved', color: '#10B981' },
-  { value: 'RFP_PUBLISHED', label: 'RFP Published', color: '#2563EB' },
-  { value: 'RFQ_OPEN', label: 'RFQ Open', color: '#8B5CF6' },
-  { value: 'BIDDING_OPEN', label: 'Bidding Open', color: '#EC4899' },
-  { value: 'UNDER_EVALUATION', label: 'Under Eval', color: '#F97316' },
-  { value: 'PENDING_APPROVAL', label: 'Pending Approval', color: '#F59E0B' },
-  { value: 'COMPLETED', label: 'Completed', color: '#16A34A' },
-  { value: 'REJECTED', label: 'Rejected', color: '#DC2626' },
+  { value: 'DRAFT', label: 'Draft', color: STATUS_COLORS.DRAFT },
+  { value: 'SUBMITTED', label: 'Submitted', color: STATUS_COLORS.SUBMITTED },
+  { value: 'UNDER_PROCUREMENT_REVIEW', label: 'Under Review', color: STATUS_COLORS.UNDER_PROCUREMENT_REVIEW },
+  { value: 'RETURNED_FOR_REVISION', label: 'Returned', color: STATUS_COLORS.RETURNED_FOR_REVISION },
+  { value: 'APPROVED', label: 'Approved', color: STATUS_COLORS.APPROVED },
+  { value: 'RFP_PUBLISHED', label: 'RFP Published', color: STATUS_COLORS.RFP_PUBLISHED },
+  { value: 'RFQ_OPEN', label: 'RFQ Open', color: STATUS_COLORS.RFQ_OPEN },
+  { value: 'BIDDING_OPEN', label: 'Bidding Open', color: STATUS_COLORS.BIDDING_OPEN },
+  { value: 'UNDER_EVALUATION', label: 'Under Eval', color: STATUS_COLORS.UNDER_EVALUATION },
+  { value: 'PENDING_APPROVAL', label: 'Pending Approval', color: STATUS_COLORS.PENDING_APPROVAL },
+  { value: 'COMPLETED', label: 'Completed', color: STATUS_COLORS.COMPLETED },
+  { value: 'REJECTED', label: 'Rejected', color: STATUS_COLORS.REJECTED },
 ];
 
 const TYPE_OPTIONS = [
-  { value: 'RFP', label: 'RFP', color: '#2563EB' },
-  { value: 'RFQ', label: 'RFQ', color: '#F59E0B' },
-  { value: 'RFI', label: 'RFI', color: '#6B7280' },
+  { value: 'RFP', label: 'RFP', color: TYPE_COLORS.RFP },
+  { value: 'RFQ', label: 'RFQ', color: TYPE_COLORS.RFQ },
+  { value: 'RFI', label: 'RFI', color: TYPE_COLORS.RFI },
 ];
 
 const SORT_COLUMNS = [
@@ -105,6 +106,7 @@ export default function ProcurementListPage() {
   const [total, setTotal] = useState(0);
   const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [currencyOptions, setCurrencyOptions] = useState<{ currency: string; count: number }[]>([]);
   const searchTimer = useRef<any>(null);
@@ -153,6 +155,7 @@ export default function ProcurementListPage() {
       setTotal(res.data.meta?.total || 0);
       setStatusCounts(res.data.meta?.statusCounts || {});
     } catch {
+      setError('Failed to load procurements');
     } finally {
       setLoading(false);
     }
@@ -227,6 +230,7 @@ export default function ProcurementListPage() {
 
   return (
     <Box>
+      {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
           <Typography variant="h5" fontWeight={700}>Procurements</Typography>

@@ -55,6 +55,7 @@ export default function InvitationsPage() {
       await api.post('/vendor-invitations', { procurementId, vendorIds });
       setDialogOpen(false);
       setSuccess('Invitations sent successfully');
+      setTimeout(() => setSuccess(''), 3000);
       setProcurementId('');
       setVendorIds([]);
       load();
@@ -68,6 +69,7 @@ export default function InvitationsPage() {
     try {
       await api.put(`/vendor-invitations/${id}/accept`);
       setSuccess('Invitation accepted');
+      setTimeout(() => setSuccess(''), 3000);
       load();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed');
@@ -79,6 +81,7 @@ export default function InvitationsPage() {
     try {
       await api.put(`/vendor-invitations/${id}/decline`);
       setSuccess('Invitation declined');
+      setTimeout(() => setSuccess(''), 3000);
       load();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed');

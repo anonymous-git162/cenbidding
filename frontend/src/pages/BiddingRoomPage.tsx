@@ -169,7 +169,7 @@ export default function BiddingRoomPage() {
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 
       {/* Procurement Selector */}
-      <Card sx={{ mb: 3 }}>
+      <Card elevation={0} sx={{ mb: 3, border: '1px solid', borderColor: 'divider' }}>
         <CardContent>
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
             <TextField select size="small" label="Select Procurement" value={procurementId} onChange={(e) => setProcurementId(e.target.value)} sx={{ minWidth: 300 }} SelectProps={{ native: true }}>
@@ -190,7 +190,7 @@ export default function BiddingRoomPage() {
       {loading && <LinearProgress sx={{ mb: 2 }} />}
 
       {procurementId && rounds.length === 0 && !loading && (
-        <Card><CardContent><Typography color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>No bidding rounds yet. {user?.role === 'PROCUREMENT' ? 'Create one to get started.' : 'Waiting for procurement to create a round.'}</Typography></CardContent></Card>
+        <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}><CardContent><Typography color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>No bidding rounds yet. {user?.role === 'PROCUREMENT' ? 'Create one to get started.' : 'Waiting for procurement to create a round.'}</Typography></CardContent></Card>
       )}
 
       {/* Rounds Summary Cards */}
@@ -217,7 +217,7 @@ export default function BiddingRoomPage() {
                     <Chip label={round.status} size="small" color={getStatusColor(round.status) as any} />
                   </Box>
                   <Divider sx={{ my: 1 }} />
-                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, mt: 1 }}>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1, mt: 1 }}>
                     <Box>
                       <Typography variant="caption" color="text.secondary">Bids</Typography>
                       <Typography variant="body2" fontWeight={600}>{round.responses?.length || 0}</Typography>
@@ -254,7 +254,7 @@ export default function BiddingRoomPage() {
 
       {/* Selected Round Detail */}
       {selectedRound && (
-        <Card sx={{ mb: 3 }}>
+        <Card elevation={0} sx={{ mb: 3, border: '1px solid', borderColor: 'divider' }}>
           <CardContent>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Box>
@@ -317,7 +317,7 @@ export default function BiddingRoomPage() {
                 {selectedRound && (
                   <Box sx={{ p: 2, bgcolor: 'primary.50', borderRadius: 1, mb: 2, border: '1px solid', borderColor: 'primary.200' }}>
                     <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>Procurement Details</Typography>
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1 }}>
                       <Box>
                         <Typography variant="caption" color="text.secondary">Budget</Typography>
                         <Typography variant="body2" fontWeight={600}>{getCurrencySymbol()}{procurements.find(p => p.id === procurementId)?.budgetEstimate?.toLocaleString() || 'N/A'} {getCurrencyCode()}</Typography>

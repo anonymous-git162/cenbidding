@@ -683,7 +683,7 @@ export default function ProcurementDetailPage() {
               ) : (
                 <List dense disablePadding>
                   {timeline.map((event: any, idx: number) => (
-                    <ListItem key={event.id} sx={{ px: 3, py: 1.5, borderBottom: idx < timeline.length - 1 ? '1px solid #F3F4F6' : 'none' }}>
+                    <ListItem key={event.id} sx={{ px: 3, py: 1.5, borderBottom: idx < timeline.length - 1 ? '1px solid' : 'none', borderColor: 'divider' }}>
                       <ListItemIcon sx={{ minWidth: 32 }}>
                         <Box sx={{ width: 24, height: 24, borderRadius: '50%', bgcolor: 'info.50', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <Icon name={EVENT_ICONS[event.eventType] || 'Timeline'} />

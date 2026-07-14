@@ -8,12 +8,13 @@ import {
 } from '@mui/material';
 import api from '../services/api';
 import { CURRENCIES, CATEGORIES } from '../utils/constants';
+import { TYPE_COLORS } from '../utils/statusColors';
 import FileUploader from '../components/FileUploader';
 
 const REQUEST_TYPES = [
-  { value: 'RFI', label: 'RFI', subtitle: 'Request for Information', description: 'Gather information from vendors before making procurement decisions', color: '#6B7280', icon: 'Search' },
-  { value: 'RFP', label: 'RFP', subtitle: 'Request for Proposal', description: 'Vendors submit detailed proposals with approach, methodology, and pricing', color: '#2563EB', icon: 'Assignment' },
-  { value: 'RFQ', label: 'RFQ', subtitle: 'Request for Quotation', description: 'Vendors provide accurate pricing information for specific goods or offered services', color: '#F59E0B', icon: 'Gavel' },
+  { value: 'RFI', label: 'RFI', subtitle: 'Request for Information', description: 'Gather information from vendors before making procurement decisions', color: TYPE_COLORS.RFI, icon: 'Search' },
+  { value: 'RFP', label: 'RFP', subtitle: 'Request for Proposal', description: 'Vendors submit detailed proposals with approach, methodology, and pricing', color: TYPE_COLORS.RFP, icon: 'Assignment' },
+  { value: 'RFQ', label: 'RFQ', subtitle: 'Request for Quotation', description: 'Vendors provide accurate pricing information for specific goods or offered services', color: TYPE_COLORS.RFQ, icon: 'Gavel' },
 ];
 
 const STEPS = ['Request Type', 'Basic Information', 'Budget & Category', 'Review & Submit'];

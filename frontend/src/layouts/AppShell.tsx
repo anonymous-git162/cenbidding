@@ -116,7 +116,7 @@ export default function AppShell() {
         {navItems.map((item) => (
           <ListItemButton
             key={item.path}
-            selected={location.pathname === item.path}
+            selected={location.pathname === item.path || location.pathname.startsWith(item.path + '/')}
             onClick={() => { navigate(item.path); if (isMobile) setMobileOpen(false); }}
             sx={{ borderRadius: 1.5, mb: 0.5, '&.Mui-selected': { bgcolor: 'primary.main', color: 'white', '&:hover': { bgcolor: 'primary.dark' }, '& .MuiListItemIcon-root': { color: 'white' } } }}
           >

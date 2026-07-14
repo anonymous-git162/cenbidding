@@ -88,9 +88,9 @@ export default function SubmissionsPage() {
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><LinearProgress sx={{ width: '100%', borderRadius: 1 }} /></Box>
       ) : procurements.length === 0 ? (
-        <Card><CardContent><Typography color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>No open procurements available</Typography></CardContent></Card>
+        <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}><CardContent><Typography color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>No open procurements available</Typography></CardContent></Card>
       ) : (
-        <Card>
+        <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
           <CardContent>
             <Typography variant="h6" sx={{ mb: 2 }}>Open Procurements</Typography>
             <TableContainer>

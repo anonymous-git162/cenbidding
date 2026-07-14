@@ -233,7 +233,7 @@ export default function EvaluationPage() {
         </Box>
       )}
       {selected && (
-        <Card>
+        <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
           <CardContent>
             {loading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
@@ -273,7 +273,7 @@ export default function EvaluationPage() {
                               const weighted = s.criterionScores ? computeWeightedScore(s.criterionScores) : s.score;
                               const isScored = reviews.some((r: any) => String(r.vendorId) === String(sub.vendorId));
                               return (
-                                <TableRow key={sub.id} sx={isScored ? { bgcolor: '#e8f5e9' } : {}}>
+                                <TableRow key={sub.id} sx={isScored ? { bgcolor: 'success.50' } : {}}>
                                   <TableCell>{sub.vendor?.companyName || 'Unknown'}</TableCell>
                                   <TableCell>${Number(sub.lastBid ?? sub.price).toLocaleString()}</TableCell>
                                   <TableCell>
