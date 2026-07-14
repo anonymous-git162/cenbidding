@@ -11,6 +11,19 @@ import { CURRENCIES, CATEGORIES } from '../utils/constants';
 import { TYPE_COLORS } from '../utils/statusColors';
 import FileUploader from '../components/FileUploader';
 
+const INITIAL_FORM = {
+  requestType: 'RFP',
+  title: '',
+  description: '',
+  businessNeed: '',
+  propertyId: '',
+  departmentId: '',
+  category: '',
+  currency: 'USD',
+  budgetEstimate: '',
+  justification: '',
+};
+
 const REQUEST_TYPES = [
   { value: 'RFI', label: 'RFI', subtitle: 'Request for Information', description: 'Gather information from vendors before making procurement decisions', color: TYPE_COLORS.RFI, icon: 'Search' },
   { value: 'RFP', label: 'RFP', subtitle: 'Request for Proposal', description: 'Vendors submit detailed proposals with approach, methodology, and pricing', color: TYPE_COLORS.RFP, icon: 'Assignment' },
@@ -22,18 +35,7 @@ const STEPS = ['Request Type', 'Basic Information', 'Budget & Category', 'Review
 export default function ProcurementCreatePage() {
   const navigate = useNavigate();
   const [activeStep, setActiveStep] = useState(0);
-  const [form, setForm] = useState({
-    requestType: 'RFP',
-    title: '',
-    description: '',
-    businessNeed: '',
-    propertyId: '',
-    departmentId: '',
-    category: '',
-    currency: 'USD',
-    budgetEstimate: '',
-    justification: '',
-  });
+  const [form, setForm] = useState({ ...INITIAL_FORM });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [apiError, setApiError] = useState('');
@@ -160,7 +162,12 @@ export default function ProcurementCreatePage() {
             <Grid item xs={12} sm={4} key={type.value}>
               <Paper
                 elevation={0}
-                onClick={() => setForm({ ...form, requestType: type.value })}
+                onClick={() => {
+                  setForm({ ...INITIAL_FORM, requestType: type.value });
+                  setFileAttachments([]);
+                  setErrors({});
+                  setTouched({});
+                }}
                 sx={{
                   p: 0, cursor: 'pointer', border: '2px solid', borderColor: selected ? type.color : 'divider',
                   bgcolor: selected ? `${type.color}08` : 'background.paper', borderRadius: 2, transition: 'all 0.2s',
