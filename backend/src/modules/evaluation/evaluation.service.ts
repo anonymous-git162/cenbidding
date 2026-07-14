@@ -5,12 +5,14 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class EvaluationService {
   constructor(
     private prisma: PrismaService,
     private notificationsService: NotificationsService,
+    private auditService: AuditService,
   ) {}
 
   private computeWeightedScore(
@@ -41,10 +43,18 @@ export class EvaluationService {
       where: { id: procurementId },
     });
     if (!procurement) throw new NotFoundException('Procurement not found');
-    return this.prisma.procurement.update({
+    const updated = await this.prisma.procurement.update({
       where: { id: procurementId },
       data: { evaluationCriteria: criteria },
     });
+    await this.auditService.log({
+      module: 'evaluation',
+      entityType: 'Procurement',
+      entityId: procurementId,
+      action: 'EVALUATION_CRITERIA_SET',
+      afterData: { criteria },
+    });
+    return updated;
   }
 
   async getCriteria(procurementId: string) {
@@ -89,6 +99,14 @@ export class EvaluationService {
       entityType: 'Procurement',
       entityId: procurementId,
       link: `/procurements/${procurementId}`,
+    });
+
+    await this.auditService.log({
+      module: 'evaluation',
+      entityType: 'Procurement',
+      entityId: procurementId,
+      action: 'EVALUATORS_ASSIGNED',
+      afterData: { evaluatorIds, leadEvaluatorId },
     });
 
     return assignments;
@@ -156,15 +174,33 @@ export class EvaluationService {
     if (criterionScores) data.criterionScores = criterionScores;
 
     if (existing) {
-      return this.prisma.evaluatorReview.update({
+      const updated = await this.prisma.evaluatorReview.update({
         where: { id: existing.id },
         data,
       });
+      await this.auditService.log({
+        module: 'evaluation',
+        entityType: 'Procurement',
+        entityId: procurementId,
+        action: 'EVALUATION_REVIEW_SUBMITTED',
+        actorId: evaluatorId,
+        afterData: { vendorId, score: finalScore },
+      });
+      return updated;
     }
 
-    return this.prisma.evaluatorReview.create({
+    const created = await this.prisma.evaluatorReview.create({
       data: { evaluatorId, procurementId, vendorId, ...data },
     });
+    await this.auditService.log({
+      module: 'evaluation',
+      entityType: 'Procurement',
+      entityId: procurementId,
+      action: 'EVALUATION_REVIEW_SUBMITTED',
+      actorId: evaluatorId,
+      afterData: { vendorId, score: finalScore },
+    });
+    return created;
   }
 
   async getReviews(procurementId: string) {
@@ -214,7 +250,7 @@ export class EvaluationService {
       Object.values(scores).reduce((sum, s) => sum + s.avgScore, 0) /
         Object.values(scores).length || 0;
 
-    return this.prisma.evaluationConsolidation.upsert({
+    const consolidated = await this.prisma.evaluationConsolidation.upsert({
       where: { procurementId },
       create: {
         procurementId,
@@ -232,6 +268,15 @@ export class EvaluationService {
         leadEvaluatorId,
       },
     });
+    await this.auditService.log({
+      module: 'evaluation',
+      entityType: 'Procurement',
+      entityId: procurementId,
+      action: 'EVALUATION_CONSOLIDATED',
+      actorId: leadEvaluatorId,
+      afterData: { avgScore, recommendation },
+    });
+    return consolidated;
   }
 
   async getConsolidation(procurementId: string) {

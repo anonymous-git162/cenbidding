@@ -5,6 +5,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ApprovalService } from '../approval/approval.service';
 import { EvaluationService } from '../evaluation/evaluation.service';
+import { AuditService } from '../audit/audit.service';
 import { mockPrisma, MockPrisma } from '../../../test/prisma-mock';
 
 describe('ProcurementsService', () => {
@@ -65,6 +66,7 @@ describe('ProcurementsService', () => {
         { provide: NotificationsService, useValue: mockNotificationsService },
         { provide: ApprovalService, useValue: mockApprovalService },
         { provide: EvaluationService, useValue: mockEvaluationService },
+        { provide: AuditService, useValue: { log: jest.fn() } },
       ],
     }).compile();
 

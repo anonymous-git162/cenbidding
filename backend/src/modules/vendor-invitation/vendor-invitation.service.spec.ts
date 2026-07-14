@@ -3,6 +3,7 @@ import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { VendorInvitationService } from './vendor-invitation.service';
 import { PrismaService } from '../../database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { AuditService } from '../audit/audit.service';
 import { mockPrisma, MockPrisma } from '../../../test/prisma-mock';
 
 describe('VendorInvitationService', () => {
@@ -20,6 +21,7 @@ describe('VendorInvitationService', () => {
           provide: NotificationsService,
           useValue: { create: jest.fn(), createForUsers: jest.fn() },
         },
+        { provide: AuditService, useValue: { log: jest.fn() } },
       ],
     }).compile();
 

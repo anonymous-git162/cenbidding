@@ -2,9 +2,11 @@ import { Module } from '@nestjs/common';
 import { MulterModule } from '@nestjs/platform-express';
 import { FilesController } from './files.controller';
 import { FilesService } from './files.service';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports: [
+    AuditModule,
     MulterModule.register({
       storage: undefined,
       limits: { fileSize: 10 * 1024 * 1024 },

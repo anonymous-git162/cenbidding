@@ -5,12 +5,14 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class VendorInvitationService {
   constructor(
     private prisma: PrismaService,
     private notificationsService: NotificationsService,
+    private auditService: AuditService,
   ) {}
 
   async invite(
@@ -65,6 +67,15 @@ export class VendorInvitationService {
         link: '/invitations',
       });
     }
+
+    await this.auditService.log({
+      module: 'vendor-invitation',
+      entityType: 'Procurement',
+      entityId: procurementId,
+      action: 'VENDORS_INVITED',
+      actorId: userId,
+      afterData: { vendorIds },
+    });
 
     return invitations;
   }
@@ -131,6 +142,15 @@ export class VendorInvitationService {
     return this.prisma.vendorInvitation.update({
       where: { id },
       data: { invitationStatus: 'ACCEPTED', acceptedAt: new Date() },
+    }).then(async (result) => {
+      await this.auditService.log({
+        module: 'vendor-invitation',
+        entityType: 'VendorInvitation',
+        entityId: id,
+        action: 'INVITATION_ACCEPTED',
+        actorId: userId,
+      });
+      return result;
     });
   }
 
@@ -148,6 +168,15 @@ export class VendorInvitationService {
     return this.prisma.vendorInvitation.update({
       where: { id },
       data: { invitationStatus: 'DECLINED', declinedAt: new Date() },
+    }).then(async (result) => {
+      await this.auditService.log({
+        module: 'vendor-invitation',
+        entityType: 'VendorInvitation',
+        entityId: id,
+        action: 'INVITATION_DECLINED',
+        actorId: userId,
+      });
+      return result;
     });
   }
 }

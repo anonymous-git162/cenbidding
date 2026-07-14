@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class EbiddingService {
@@ -14,6 +15,7 @@ export class EbiddingService {
   constructor(
     private prisma: PrismaService,
     private notificationsService: NotificationsService,
+    private auditService: AuditService,
   ) {}
 
   private async checkMinVendors(procurementId: string) {
@@ -56,7 +58,7 @@ export class EbiddingService {
       data: { status: 'CLOSED', endsAt: new Date() },
     });
 
-    return this.prisma.ebiddingRound.create({
+    const round = await this.prisma.ebiddingRound.create({
       data: {
         procurementId,
         roundNo: (lastRound?.roundNo || 0) + 1,
@@ -64,6 +66,14 @@ export class EbiddingService {
         status: 'PENDING',
       },
     });
+
+    await this.auditService.log({
+      module: 'ebidding', entityType: 'EbiddingRound', entityId: round.id,
+      action: 'EBIDDING_ROUND_CREATED', actorId: createdBy,
+      afterData: { roundNo: round.roundNo },
+    });
+
+    return round;
   }
 
   async openRound(id: string, _userId: string) {
@@ -95,6 +105,12 @@ export class EbiddingService {
     });
 
     await this.notifyVendorsRoundOpen(round, updated);
+
+    await this.auditService.log({
+      module: 'ebidding', entityType: 'EbiddingRound', entityId: id,
+      action: 'EBIDDING_ROUND_OPENED', actorId: _userId,
+    });
+
     return updated;
   }
 
@@ -143,10 +159,17 @@ export class EbiddingService {
     if (round.status !== 'OPEN')
       throw new BadRequestException('Round is not open');
 
-    return this.prisma.ebiddingRound.update({
+    const closed = await this.prisma.ebiddingRound.update({
       where: { id },
       data: { status: 'CLOSED', endsAt: new Date() },
     });
+
+    await this.auditService.log({
+      module: 'ebidding', entityType: 'EbiddingRound', entityId: id,
+      action: 'EBIDDING_ROUND_CLOSED', actorId: _userId,
+    });
+
+    return closed;
   }
 
   async placeBid(roundId: string, vendorUserId: string, bidAmount: number) {
@@ -193,15 +216,31 @@ export class EbiddingService {
     });
 
     if (existingBid) {
-      return this.prisma.ebiddingResponse.update({
+      const updated = await this.prisma.ebiddingResponse.update({
         where: { id: existingBid.id },
         data: { bidAmount, submittedAt: new Date() },
       });
+
+      await this.auditService.log({
+        module: 'ebidding', entityType: 'EbiddingResponse', entityId: updated.id,
+        action: 'BID_PLACED', actorId: vendorUserId,
+        afterData: { bidAmount },
+      });
+
+      return updated;
     }
 
-    return this.prisma.ebiddingResponse.create({
+    const created = await this.prisma.ebiddingResponse.create({
       data: { ebiddingRoundId: roundId, vendorId: vendor.id, bidAmount },
     });
+
+    await this.auditService.log({
+      module: 'ebidding', entityType: 'EbiddingResponse', entityId: created.id,
+      action: 'BID_PLACED', actorId: vendorUserId,
+      afterData: { bidAmount },
+    });
+
+    return created;
   }
 
   async getRounds(procurementId: string, user?: { id: string; role: string }) {
@@ -302,6 +341,14 @@ export class EbiddingService {
     if (round?.status !== 'OPEN')
       throw new BadRequestException('Round is not open');
 
-    return this.prisma.ebiddingResponse.delete({ where: { id: bidId } });
+    const deleted = await this.prisma.ebiddingResponse.delete({ where: { id: bidId } });
+
+    await this.auditService.log({
+      module: 'ebidding', entityType: 'EbiddingResponse', entityId: bidId,
+      action: 'BID_DELETED', actorId: vendorUserId,
+      afterData: { roundId: bid.ebiddingRoundId, vendorId: vendor.id },
+    });
+
+    return deleted;
   }
 }

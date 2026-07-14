@@ -5,12 +5,14 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class RfqSubmissionService {
   constructor(
     private prisma: PrismaService,
     private notificationsService: NotificationsService,
+    private auditService: AuditService,
   ) {}
 
   async create(
@@ -45,6 +47,15 @@ export class RfqSubmissionService {
         data: { submissionId: submission.id },
       });
     }
+
+    await this.auditService.log({
+      module: 'rfq-submission',
+      entityType: 'RfqSubmission',
+      entityId: submission.id,
+      action: 'SUBMISSION_CREATED',
+      actorId: vendorId,
+      afterData: { procurementId, price },
+    });
 
     return submission;
   }
@@ -99,6 +110,15 @@ export class RfqSubmissionService {
       });
     }
 
+    await this.auditService.log({
+      module: 'rfq-submission',
+      entityType: 'RfqSubmission',
+      entityId: id,
+      action: 'SUBMISSION_SUBMITTED',
+      actorId: vendorUserId,
+      afterData: { procurementId: submission.procurement.id },
+    });
+
     return updated;
   }
 
@@ -139,6 +159,15 @@ export class RfqSubmissionService {
         });
       }
     }
+
+    await this.auditService.log({
+      module: 'rfq-submission',
+      entityType: 'RfqSubmission',
+      entityId: id,
+      action: 'SUBMISSION_UPDATED',
+      actorId: vendorUserId,
+      afterData: { price, proposalText },
+    });
 
     return updated;
   }

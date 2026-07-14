@@ -3,6 +3,7 @@ import { NotFoundException } from '@nestjs/common';
 import { RfqSubmissionService } from './rfq-submission.service';
 import { PrismaService } from '../../database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { AuditService } from '../audit/audit.service';
 import { mockPrisma, MockPrisma } from '../../../test/prisma-mock';
 
 describe('RfqSubmissionService', () => {
@@ -23,6 +24,7 @@ describe('RfqSubmissionService', () => {
         RfqSubmissionService,
         { provide: PrismaService, useValue: prisma },
         { provide: NotificationsService, useValue: mockNotificationsService },
+        { provide: AuditService, useValue: { log: jest.fn() } },
       ],
     }).compile();
 

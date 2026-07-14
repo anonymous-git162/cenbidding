@@ -3,6 +3,7 @@ import { BadRequestException } from '@nestjs/common';
 import { EvaluationService } from './evaluation.service';
 import { PrismaService } from '../../database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { AuditService } from '../audit/audit.service';
 import { mockPrisma, MockPrisma } from '../../../test/prisma-mock';
 
 describe('EvaluationService', () => {
@@ -41,6 +42,7 @@ describe('EvaluationService', () => {
         EvaluationService,
         { provide: PrismaService, useValue: prisma },
         { provide: NotificationsService, useValue: mockNotificationsService },
+        { provide: AuditService, useValue: { log: jest.fn() } },
       ],
     }).compile();
 

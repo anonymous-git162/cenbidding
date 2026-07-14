@@ -159,6 +159,11 @@ export class AuthService {
       },
     });
 
+    await this.auditService.log({
+      module: 'auth', entityType: 'User', entityId: user.id,
+      action: 'USER_REGISTERED', actorId: user.id, actorRole: user.role,
+    });
+
     const tokens = await this.generateTokens(user.id, user.email, user.role);
     await this.storeRefreshToken(user.id, tokens.refreshToken);
 
@@ -221,6 +226,12 @@ export class AuthService {
       where: { userId },
       data: { revokedAt: new Date() },
     });
+
+    await this.auditService.log({
+      module: 'auth', entityType: 'User', entityId: userId,
+      action: 'LOGOUT', actorId: userId,
+    });
+
     return { message: 'Logged out successfully' };
   }
 
@@ -270,6 +281,11 @@ export class AuthService {
     await this.prisma.refreshToken.updateMany({
       where: { userId },
       data: { revokedAt: new Date() },
+    });
+
+    await this.auditService.log({
+      module: 'auth', entityType: 'User', entityId: userId,
+      action: 'PASSWORD_CHANGED', actorId: userId,
     });
 
     return { message: 'Password changed successfully' };

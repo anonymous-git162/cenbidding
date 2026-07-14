@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { PrismaService } from '../../database/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { mockPrisma, MockPrisma } from '../../../test/prisma-mock';
 
 describe('UsersService', () => {
@@ -33,7 +34,7 @@ describe('UsersService', () => {
     prisma = mockPrisma();
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [UsersService, { provide: PrismaService, useValue: prisma }],
+      providers: [UsersService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: { log: jest.fn() } }],
     }).compile();
 
     service = module.get<UsersService>(UsersService);

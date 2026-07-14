@@ -4,6 +4,7 @@ import { validateMagicBytes } from '../../common/helpers/magic-bytes';
 import { v2 as cloudinary } from 'cloudinary';
 import * as fs from 'fs';
 import * as path from 'path';
+import { AuditService } from '../audit/audit.service';
 
 const ALLOWED_MIME_TYPES = [
   'application/pdf',
@@ -25,7 +26,10 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 export class FilesService {
   private cloudinaryEnabled = false;
 
-  constructor(private prisma: PrismaService) {
+  constructor(
+    private prisma: PrismaService,
+    private auditService: AuditService,
+  ) {
     if (process.env.CLOUDINARY_CLOUD_NAME) {
       cloudinary.config({
         cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -168,6 +172,15 @@ export class FilesService {
     }
 
     await this.prisma.file.delete({ where: { id } });
+
+    await this.auditService.log({
+      module: 'files',
+      entityType: 'File',
+      entityId: id,
+      action: 'FILE_DELETED',
+      actorId: userId,
+    });
+
     return file;
   }
 }

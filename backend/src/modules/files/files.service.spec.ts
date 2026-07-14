@@ -3,6 +3,7 @@ import { BadRequestException } from '@nestjs/common';
 import * as fs from 'fs';
 import { FilesService } from './files.service';
 import { PrismaService } from '../../database/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { mockPrisma, MockPrisma } from '../../../test/prisma-mock';
 
 jest.mock('fs');
@@ -31,7 +32,7 @@ describe('FilesService', () => {
     (fs.writeFileSync as jest.Mock).mockReturnValue(undefined);
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [FilesService, { provide: PrismaService, useValue: prisma }],
+      providers: [FilesService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: { log: jest.fn() } }],
     }).compile();
 
     service = module.get<FilesService>(FilesService);

@@ -7,10 +7,14 @@ import { PrismaService } from '../../database/prisma.service';
 import { Prisma, VendorStatus } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class VendorService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private auditService: AuditService,
+  ) {}
 
   async create(data: {
     companyName: string;
@@ -46,7 +50,7 @@ export class VendorService {
       userId = user.id;
     }
 
-    return this.prisma.vendor.create({
+    const vendor = await this.prisma.vendor.create({
       data: {
         companyName: data.companyName,
         taxId: data.taxId,
@@ -57,6 +61,16 @@ export class VendorService {
         userId,
       },
     });
+
+    await this.auditService.log({
+      module: 'vendor',
+      entityType: 'Vendor',
+      entityId: vendor.id,
+      action: 'VENDOR_CREATED',
+      actorId: userId,
+    });
+
+    return vendor;
   }
 
   async findAll(page = 1, limit = 20, search?: string, status?: string) {
@@ -105,17 +119,35 @@ export class VendorService {
       status?: VendorStatus;
     },
   ) {
-    return this.prisma.vendor.update({ where: { id }, data });
+    const updated = await this.prisma.vendor.update({ where: { id }, data });
+
+    await this.auditService.log({
+      module: 'vendor',
+      entityType: 'Vendor',
+      entityId: id,
+      action: 'VENDOR_UPDATED',
+    });
+
+    return updated;
   }
 
   async remove(id: string) {
     const vendor = await this.prisma.vendor.findUnique({ where: { id } });
     if (!vendor) throw new NotFoundException('Vendor not found');
 
-    return this.prisma.vendor.update({
+    const updated = await this.prisma.vendor.update({
       where: { id },
       data: { status: 'INACTIVE' as any },
     });
+
+    await this.auditService.log({
+      module: 'vendor',
+      entityType: 'Vendor',
+      entityId: id,
+      action: 'VENDOR_DEACTIVATED',
+    });
+
+    return updated;
   }
 
   async selfRegister(data: {
@@ -176,10 +208,19 @@ export class VendorService {
       data: { isActive: true },
     });
 
-    return this.prisma.vendor.update({
+    const updated = await this.prisma.vendor.update({
       where: { id },
       data: { status: 'ACTIVE' },
     });
+
+    await this.auditService.log({
+      module: 'vendor',
+      entityType: 'Vendor',
+      entityId: id,
+      action: 'VENDOR_APPROVED',
+    });
+
+    return updated;
   }
 
   async reject(id: string) {
@@ -194,9 +235,18 @@ export class VendorService {
       data: { isActive: false },
     });
 
-    return this.prisma.vendor.update({
+    const updated = await this.prisma.vendor.update({
       where: { id },
       data: { status: 'INACTIVE' },
     });
+
+    await this.auditService.log({
+      module: 'vendor',
+      entityType: 'Vendor',
+      entityId: id,
+      action: 'VENDOR_REJECTED',
+    });
+
+    return updated;
   }
 }

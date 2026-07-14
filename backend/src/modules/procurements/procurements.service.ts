@@ -12,6 +12,7 @@ import { WORKFLOW_TRANSITIONS } from '../../common/enums';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ApprovalService } from '../approval/approval.service';
 import { EvaluationService } from '../evaluation/evaluation.service';
+import { AuditService } from '../audit/audit.service';
 import * as crypto from 'crypto';
 import {
   CreateProcurementDto,
@@ -28,6 +29,7 @@ export class ProcurementsService {
     @Inject(forwardRef(() => ApprovalService))
     private approvalService: ApprovalService,
     private evaluationService: EvaluationService,
+    private auditService: AuditService,
   ) {}
 
   private generateRequestNo(type: string): string {
@@ -293,6 +295,7 @@ export class ProcurementsService {
     await this.appendTimeline(id, 'DRAFT_UPDATED', 'REQUESTER', userId, {
       fields: Object.keys(dto),
     });
+    await this.logAudit('procurements', id, 'PROCUREMENT_UPDATED', userId, 'REQUESTER', procurement, updated);
     return updated;
   }
 
@@ -355,6 +358,8 @@ export class ProcurementsService {
       entityId: id,
       link: `/procurements/${id}`,
     });
+
+    await this.logAudit('procurements', id, 'APPROVER_REASSIGNED', approverId, 'ADMIN', procurement, updated);
 
     return { ...updated, assignedApprover: approver };
   }
@@ -728,6 +733,8 @@ export class ProcurementsService {
 
     await this.appendTimeline(id, 'CONTRACT_SENT', 'PROCUREMENT', userId, {});
 
+    await this.logAudit('procurements', id, 'CONTRACT_SENT', userId, 'PROCUREMENT', null, { contractSentAt: new Date() });
+
     if (result?.winningVendor?.userId) {
       await this.notificationsService.createForUsers([result.winningVendor.userId], {
         title: 'Contract Ready',
@@ -766,6 +773,8 @@ export class ProcurementsService {
     });
 
     await this.appendTimeline(id, 'CONTRACT_SIGNED', 'VENDOR', vendorUserId, {});
+
+    await this.logAudit('procurements', id, 'CONTRACT_SIGNED', vendorUserId, 'VENDOR', null, { contractSignedAt: new Date() });
 
     await this.notificationsService.createForUsers([procurement.requesterId], {
       title: 'Contract Signed',
@@ -927,26 +936,24 @@ export class ProcurementsService {
     module: string,
     entityId: string,
     action: string,
-    actorId: string,
-    actorRole: string,
-    beforeData: any,
-    afterData: any,
+    actorId?: string,
+    actorRole?: string,
+    beforeData?: any,
+    afterData?: any,
   ) {
-    return this.prisma.auditLog.create({
-      data: {
-        module,
-        entityType: 'Procurement',
-        entityId,
-        action,
-        actorId,
-        actorRole,
-        beforeData: beforeData
-          ? JSON.parse(JSON.stringify(beforeData))
-          : undefined,
-        afterData: afterData
-          ? JSON.parse(JSON.stringify(afterData))
-          : undefined,
-      },
+    return this.auditService.log({
+      module,
+      entityType: 'Procurement',
+      entityId,
+      action,
+      actorId,
+      actorRole,
+      beforeData: beforeData
+        ? JSON.parse(JSON.stringify(beforeData))
+        : undefined,
+      afterData: afterData
+        ? JSON.parse(JSON.stringify(afterData))
+        : undefined,
     });
   }
 
@@ -1034,6 +1041,8 @@ export class ProcurementsService {
   async remove(id: string) {
     const procurement = await this.prisma.procurement.findUnique({ where: { id } });
     if (!procurement) throw new NotFoundException('Procurement not found');
-    return this.prisma.procurement.delete({ where: { id } });
+    await this.prisma.procurement.delete({ where: { id } });
+    await this.logAudit('procurements', id, 'PROCUREMENT_DELETED', undefined, undefined, procurement, undefined);
+    return { message: 'Procurement deleted' };
   }
 }

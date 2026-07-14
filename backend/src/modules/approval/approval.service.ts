@@ -4,11 +4,12 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { UserRole } from '@prisma/client';
 
 @Injectable()
 export class ApprovalService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private auditService: AuditService) {}
 
   async routeToApprover(procurementId: string) {
     const procurement = await this.prisma.procurement.findUnique({
@@ -116,6 +117,11 @@ export class ApprovalService {
       },
     });
 
+    await this.auditService.log({
+      module: 'approval', entityType: 'Procurement', entityId: procurementId,
+      action: 'SUBMITTED_FOR_APPROVAL', actorId: userId,
+    });
+
     return { message: 'Sent for approval', assignedApproverId };
   }
 
@@ -185,6 +191,11 @@ export class ApprovalService {
         },
       });
 
+      await this.auditService.log({
+        module: 'approval', entityType: 'Procurement', entityId: procurementId,
+        action: 'AWARD_APPROVED', actorId: approverId,
+      });
+
       return updated;
     });
   }
@@ -222,6 +233,11 @@ export class ApprovalService {
           actorId: approverId,
           metadata: { reason },
         },
+      });
+
+      await this.auditService.log({
+        module: 'approval', entityType: 'Procurement', entityId: procurementId,
+        action: 'RETURNED_FROM_APPROVAL', actorId: approverId,
       });
 
       return updated;
@@ -262,6 +278,11 @@ export class ApprovalService {
           actorId: approverId,
           metadata: { reason },
         },
+      });
+
+      await this.auditService.log({
+        module: 'approval', entityType: 'Procurement', entityId: procurementId,
+        action: 'REJECTED', actorId: approverId,
       });
 
       return updated;
@@ -342,6 +363,12 @@ export class ApprovalService {
         actorRole: 'SYSTEM',
         metadata: { hoursPending, reason: 'Approval overdue' },
       },
+    });
+
+    await this.auditService.log({
+      module: 'approval', entityType: 'Procurement', entityId: procurementId,
+      action: 'APPROVAL_ESCALATED', actorId: undefined,
+      afterData: { hoursPending },
     });
 
     return { message: `Escalated after ${hoursPending} hours`, hoursPending };

@@ -4,10 +4,14 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class ResultsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private auditService: AuditService,
+  ) {}
 
   async getResult(
     procurementId: string,
@@ -54,9 +58,19 @@ export class ResultsService {
     });
     if (!result) throw new NotFoundException('Result not found');
 
-    return this.prisma.procurementResult.update({
+    const updated = await this.prisma.procurementResult.update({
       where: { procurementId },
       data: { closedAt: new Date() },
     });
+
+    await this.auditService.log({
+      module: 'results',
+      entityType: 'Procurement',
+      entityId: procurementId,
+      action: 'CASE_CLOSED',
+      actorId: _userId,
+    });
+
+    return updated;
   }
 }

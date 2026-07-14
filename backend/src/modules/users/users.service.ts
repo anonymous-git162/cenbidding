@@ -8,10 +8,14 @@ import { PrismaService } from '../../database/prisma.service';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { Prisma, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private auditService: AuditService,
+  ) {}
 
   async findAll(dto: PaginationDto, requestorRole?: string) {
     const {
@@ -184,6 +188,13 @@ export class UsersService {
       });
     }
 
+    await this.auditService.log({
+      module: 'users',
+      entityType: 'User',
+      entityId: user.id,
+      action: 'USER_CREATED',
+    });
+
     return user;
   }
 
@@ -272,6 +283,13 @@ export class UsersService {
       }
     }
 
+    await this.auditService.log({
+      module: 'users',
+      entityType: 'User',
+      entityId: id,
+      action: 'USER_UPDATED',
+    });
+
     return updatedUser;
   }
 
@@ -281,17 +299,26 @@ export class UsersService {
     if (user.role === 'ADMIN')
       throw new BadRequestException('Cannot delete admin users');
 
-    return this.prisma.user.delete({
+    const deleted = await this.prisma.user.delete({
       where: { id },
       select: { id: true, email: true, fullName: true, role: true },
     });
+
+    await this.auditService.log({
+      module: 'users',
+      entityType: 'User',
+      entityId: id,
+      action: 'USER_DELETED',
+    });
+
+    return deleted;
   }
 
   async unlock(id: string) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
 
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id },
       data: { failedLoginAttempts: 0, lockedUntil: null },
       select: {
@@ -302,6 +329,15 @@ export class UsersService {
         lockedUntil: true,
       },
     });
+
+    await this.auditService.log({
+      module: 'users',
+      entityType: 'User',
+      entityId: id,
+      action: 'USER_UNLOCKED',
+    });
+
+    return updated;
   }
 
   async resetPassword(id: string, newPassword: string) {
@@ -309,7 +345,7 @@ export class UsersService {
     if (!user) throw new NotFoundException('User not found');
 
     const passwordHash = await bcrypt.hash(newPassword, 10);
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id },
       data: { passwordHash },
       select: {
@@ -320,5 +356,14 @@ export class UsersService {
         isActive: true,
       },
     });
+
+    await this.auditService.log({
+      module: 'users',
+      entityType: 'User',
+      entityId: id,
+      action: 'PASSWORD_RESET',
+    });
+
+    return updated;
   }
 }
