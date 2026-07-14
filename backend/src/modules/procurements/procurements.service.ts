@@ -535,6 +535,14 @@ export class ProcurementsService {
   }
 
   async completeVendorResponse(id: string, userId: string) {
+    const acceptedVendors = await this.prisma.vendorInvitation.count({
+      where: { procurementId: id, invitationStatus: 'ACCEPTED' },
+    });
+    if (acceptedVendors < 2) {
+      throw new BadRequestException(
+        'At least 2 vendors must accept the invitation before opening vendor responses.',
+      );
+    }
     return this.transition(
       id,
       'VENDOR_RESPONSE_IN_PROGRESS',
@@ -545,6 +553,14 @@ export class ProcurementsService {
   }
 
   async startEbidding(id: string, userId: string) {
+    const acceptedVendors = await this.prisma.vendorInvitation.count({
+      where: { procurementId: id, invitationStatus: 'ACCEPTED' },
+    });
+    if (acceptedVendors < 2) {
+      throw new BadRequestException(
+        'At least 2 vendors must accept the invitation before starting e-bidding.',
+      );
+    }
     const count = await this.prisma.rfqSubmission.count({
       where: { procurementId: id, status: SubmissionStatus.SUBMITTED },
     });
