@@ -406,7 +406,7 @@ export default function ProcurementDetailPage() {
                 </Box>
               )}
 
-              {tab === 1 && (
+              {tab === 1 && role !== 'VENDOR' && (
                 <Box>
                   <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 2 }}>Invited Vendors</Typography>
                   {(!procurement.invitations || procurement.invitations.length === 0) ? (

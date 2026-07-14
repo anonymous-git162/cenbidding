@@ -121,4 +121,18 @@ describe('ProcurementDetailPage', () => {
       expect(screen.getByText(/Draft Created/i)).toBeInTheDocument();
     });
   });
+
+  it('hides Vendors tab, Evaluation tab, and Workflow Progress from VENDOR role', async () => {
+    (useAuth as any).mockReturnValue({
+      user: { id: 'vendor-1', role: 'VENDOR' },
+    });
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('IT Infrastructure Upgrade')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Overview')).toBeInTheDocument();
+    expect(screen.getAllByText('Submissions').length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByText('Evaluation')).not.toBeInTheDocument();
+    expect(screen.queryByText('Workflow Progress')).not.toBeInTheDocument();
+  });
 });
