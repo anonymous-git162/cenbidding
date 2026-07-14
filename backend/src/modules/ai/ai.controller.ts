@@ -35,6 +35,7 @@ export class AiController {
       proposalText: string;
       allVendorPrices: number[];
       procurementTitle: string;
+      language?: string;
     },
   ) {
     return this.aiService.scoreVendor(body);

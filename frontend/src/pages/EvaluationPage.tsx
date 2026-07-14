@@ -27,6 +27,8 @@ export default function EvaluationPage() {
   const [aiDialog, setAiDialog] = useState<{ open: boolean; vendorId: string; vendorName: string; score: number; reasoning: string; breakdown: any }>({ open: false, vendorId: '', vendorName: '', score: 0, reasoning: '', breakdown: null });
   const [criteriaDialog, setCriteriaDialog] = useState(false);
   const [criteriaForm, setCriteriaForm] = useState<{ name: string; weight: number; maxScore: number }[]>([]);
+  const [aiLanguage, setAiLanguage] = useState('English');
+  const LANGUAGES = ['English', 'Thai'];
 
   useEffect(() => {
     api.get('/procurements', { params: { limit: 50 } })
@@ -133,6 +135,7 @@ export default function EvaluationPage() {
         proposalText: sub?.proposalText || '',
         allVendorPrices: allPrices,
         procurementTitle: procurements.find((p) => p.id === selected)?.title || '',
+        language: aiLanguage,
       });
       setAiDialog({
         open: true,
@@ -202,16 +205,24 @@ export default function EvaluationPage() {
 
       <Card elevation={0} sx={{ mb: 3, border: '1px solid', borderColor: 'divider' }}>
         <CardContent>
-          <FormControl fullWidth>
-            <InputLabel id="proc-select-label">Procurement</InputLabel>
-            <Select labelId="proc-select-label" label="Procurement" value={selected}
-              onChange={(e) => { setSelected(e.target.value); setTab(0); }}>
-              <MenuItem value=""><em>Select a procurement...</em></MenuItem>
-              {procurements.map((p) => (
-                <MenuItem key={p.id} value={p.id}>{p.requestNo} - {p.title} [{p.status}]</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+            <FormControl fullWidth>
+              <InputLabel id="proc-select-label">Procurement</InputLabel>
+              <Select labelId="proc-select-label" label="Procurement" value={selected}
+                onChange={(e) => { setSelected(e.target.value); setTab(0); }}>
+                <MenuItem value=""><em>Select a procurement...</em></MenuItem>
+                {procurements.map((p) => (
+                  <MenuItem key={p.id} value={p.id}>{p.requestNo} - {p.title} [{p.status}]</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl sx={{ minWidth: 120 }}>
+              <InputLabel>AI Language</InputLabel>
+              <Select value={aiLanguage} label="AI Language" onChange={(e) => setAiLanguage(e.target.value)}>
+                {LANGUAGES.map((l) => <MenuItem key={l} value={l}>{l}</MenuItem>)}
+              </Select>
+            </FormControl>
+          </Box>
           {procurements.length === 0 && !loading && (
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
               No procurements available for evaluation

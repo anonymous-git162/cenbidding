@@ -15,6 +15,7 @@ interface VendorScoreRequest {
   proposalText: string;
   allVendorPrices: number[];
   procurementTitle: string;
+  language?: string;
 }
 
 export interface BreakdownCriterion {
@@ -222,6 +223,7 @@ Generate the complete TOR document now:`;
     const avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length;
     const minPrice = Math.min(...prices);
     const maxPrice = Math.max(...prices);
+    const lang = input.language || 'English';
 
     return `You are a procurement evaluator for Centara Hotels & Resorts. Analyze this vendor proposal and score each criterion 0-100.
 
@@ -242,6 +244,7 @@ Score the vendor on a scale of 0-100 for EACH criterion:
 3. Service & Delivery Criteria (Weight: 10%): Evaluate delivery lead time, warranty period, and after-sales service/SLA commitments.
 4. Qualifications & Experience Criteria (Weight: 10%): Evaluate proven track record, team expertise/certifications, and company profile/financial stability.
 
+Write your reasoning in ${lang}.
 Respond ONLY with valid JSON in this exact format. No markdown, no code fences.
 {
   "price": <number 0-100>,
