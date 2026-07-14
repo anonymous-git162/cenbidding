@@ -564,9 +564,9 @@ export class ProcurementsService {
     const count = await this.prisma.rfqSubmission.count({
       where: { procurementId: id, status: SubmissionStatus.SUBMITTED },
     });
-    if (count < 1) {
+    if (count < 2) {
       throw new BadRequestException(
-        'At least 1 vendor must submit a proposal before starting e-bidding.',
+        'At least 2 vendors must submit a proposal before starting e-bidding.',
       );
     }
     return this.transition(
