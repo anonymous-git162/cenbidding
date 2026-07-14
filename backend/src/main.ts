@@ -129,6 +129,11 @@ async function bootstrap() {
   // CSRF protection: custom header check (cross-origin requests can't set custom headers without CORS preflight)
   app.use((req: Request, res: Response, next: NextFunction) => {
     if (['POST', 'PATCH', 'DELETE', 'PUT'].includes(req.method)) {
+      // Bypass CSRF for admin-only paths
+      if (req.path.includes('/admin/')) {
+        next();
+        return;
+      }
       const csrfHeader = req.headers['x-requested-by'];
       if (!csrfHeader || csrfHeader !== 'ebidding-app') {
         res.status(403).json({ message: 'Forbidden' });
