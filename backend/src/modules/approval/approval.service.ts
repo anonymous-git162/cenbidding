@@ -11,6 +11,20 @@ import { UserRole } from '@prisma/client';
 export class ApprovalService {
   constructor(private prisma: PrismaService, private auditService: AuditService) {}
 
+  private async syncApproverAssignments(procurementId: string, approverIds: string[]) {
+    await this.prisma.procurementApprover.deleteMany({
+      where: { procurementId },
+    });
+    if (approverIds.length > 0) {
+      await this.prisma.procurementApprover.createMany({
+        data: approverIds.map(approverId => ({
+          procurementId,
+          approverId,
+        })),
+      });
+    }
+  }
+
   async routeToApprover(procurementId: string) {
     const procurement = await this.prisma.procurement.findUnique({
       where: { id: procurementId },
@@ -52,6 +66,10 @@ export class ApprovalService {
       where: { id: procurementId },
       data: { assignedApproverId },
     });
+
+    if (assignedApproverId) {
+      await this.syncApproverAssignments(procurementId, [assignedApproverId]);
+    }
 
     return { assignedApproverId };
   }
@@ -107,6 +125,10 @@ export class ApprovalService {
       },
     });
 
+    if (assignedApproverId) {
+      await this.syncApproverAssignments(procurementId, [assignedApproverId]);
+    }
+
     await this.prisma.procurementTimeline.create({
       data: {
         procurementId,
@@ -131,13 +153,15 @@ export class ApprovalService {
         status: 'PENDING_APPROVAL',
         currentOwnerRole: 'APPROVER',
         OR: [
-          { assignedApproverId: approverUserId },
-          { assignedApproverId: null },
+          { approverAssignments: { some: { approverId: approverUserId } } },
+          { approverAssignments: { none: {} } },
         ],
       },
       include: {
         requester: { select: { id: true, fullName: true } },
-        assignedApprover: { select: { id: true, fullName: true } },
+        approverAssignments: {
+          include: { approver: { select: { id: true, fullName: true } } },
+        },
         consolidations: true,
         _count: { select: { submissions: true } },
       },

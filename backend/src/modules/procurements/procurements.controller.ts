@@ -144,7 +144,7 @@ export class ProcurementsController {
     @Param('id') id: string,
     @Body() body: ReassignApproverDto,
   ) {
-    return this.procurementsService.reassignApprover(id, body.approverId);
+    return this.procurementsService.reassignApprover(id, body.approverIds);
   }
 
   @Post(':id/submit')

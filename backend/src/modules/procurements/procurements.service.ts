@@ -250,6 +250,9 @@ export class ProcurementsService {
         evaluatorAssignments: {
           include: { evaluator: { select: { id: true, fullName: true, email: true, role: true } } },
         },
+        approverAssignments: {
+          include: { approver: { select: { id: true, fullName: true, email: true } } },
+        },
         result: {
           include: { winningVendor: { select: { id: true, companyName: true, userId: true } } },
         },
@@ -347,22 +350,38 @@ export class ProcurementsService {
     );
   }
 
-  async reassignApprover(id: string, approverId: string) {
+  async reassignApprover(id: string, approverIds: string[]) {
     const procurement = await this.prisma.procurement.findUnique({ where: { id } });
     if (!procurement) throw new NotFoundException('Procurement not found');
     if (procurement.status !== 'PENDING_APPROVAL' && procurement.status !== 'RETURNED_FROM_APPROVAL') {
       throw new BadRequestException('Can only reassign approver at PENDING_APPROVAL or RETURNED_FROM_APPROVAL');
     }
-    const approver = await this.prisma.user.findUnique({ where: { id: approverId }, select: { id: true, fullName: true } });
-    if (!approver) throw new NotFoundException('Approver not found');
 
+    const approvers = await this.prisma.user.findMany({
+      where: { id: { in: approverIds }, role: 'APPROVER', isActive: true },
+      select: { id: true, fullName: true },
+    });
+    if (approvers.length !== approverIds.length) {
+      throw new BadRequestException('One or more approvers not found or inactive');
+    }
+
+    await this.prisma.procurementApprover.deleteMany({
+      where: { procurementId: id },
+    });
+    if (approverIds.length > 0) {
+      await this.prisma.procurementApprover.createMany({
+        data: approverIds.map(aId => ({ procurementId: id, approverId: aId })),
+      });
+    }
+
+    const firstApproverId = approverIds[0] || null;
     const updated = await this.prisma.procurement.update({
       where: { id },
-      data: { assignedApproverId: approverId },
+      data: { assignedApproverId: firstApproverId },
       select: { id: true, requestNo: true },
     });
 
-    await this.notificationsService.createForUsers([approverId], {
+    await this.notificationsService.createForUsers(approverIds, {
       title: 'Approval Assigned',
       message: `You have been assigned to approve ${updated.requestNo}`,
       type: 'info',
@@ -371,9 +390,9 @@ export class ProcurementsService {
       link: `/procurements/${id}`,
     });
 
-    await this.logAudit('procurements', id, 'APPROVER_REASSIGNED', approverId, 'ADMIN', procurement, updated);
+    await this.logAudit('procurements', id, 'APPROVER_REASSIGNED', firstApproverId || 'none', 'ADMIN', procurement, updated);
 
-    return { ...updated, assignedApprover: approver };
+    return { ...updated, approverAssignments: approvers };
   }
 
   async rejectReview(id: string, userId: string, reason?: string) {

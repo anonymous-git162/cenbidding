@@ -7,6 +7,7 @@ import {
   MinLength,
   MaxLength,
   IsArray,
+  ArrayMinSize,
   Min,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
@@ -202,8 +203,10 @@ export class FinalDecisionDto {
 }
 
 export class ReassignApproverDto {
-  @IsString()
-  approverId: string;
+  @IsArray()
+  @IsString({ each: true })
+  @ArrayMinSize(1)
+  approverIds: string[];
 }
 
 export class AnnounceAwardDto {

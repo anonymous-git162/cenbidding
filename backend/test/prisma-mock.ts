@@ -28,6 +28,7 @@ export const mockPrisma = (): any => ({
   evaluatorReview: createMockModel(),
   evaluationConsolidation: createMockModel(),
   approval: createMockModel(),
+  procurementApprover: createMockModel(),
   procurementResult: createMockModel(),
   auditLog: createMockModel(),
   file: createMockModel(),

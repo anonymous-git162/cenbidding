@@ -115,6 +115,7 @@ model User {
   vendor                    Vendor?
   evaluatorAssignments      EvaluatorAssignment[]
   evaluatorReviews          EvaluatorReview[]
+  approverAssignments       ProcurementApprover[]
   evaluationsLeadConsolidated EvaluationConsolidation[] @relation("LeadEvaluator")
   approvals                 Approval[]
   auditLogs                 AuditLog[]
@@ -214,6 +215,7 @@ model Procurement {
   result                ProcurementResult?
   files                 File[]
   evaluationCriteria    Json?                 @map("evaluation_criteria")
+  approverAssignments   ProcurementApprover[]
 
   @@index([status])
   @@index([requesterId])
@@ -322,6 +324,21 @@ model EvaluatorAssignment {
   @@unique([procurementId, evaluatorId])
   @@index([procurementId])
   @@map("evaluator_assignments")
+}
+
+model ProcurementApprover {
+  id             String   @id @default(uuid()) @db.Uuid
+  procurementId  String   @map("procurement_id") @db.Uuid
+  approverId     String   @map("approver_id") @db.Uuid
+  assignedAt     DateTime @default(now()) @map("assigned_at")
+
+  procurement Procurement @relation(fields: [procurementId], references: [id], onDelete: Cascade)
+  approver    User        @relation(fields: [approverId], references: [id])
+
+  @@unique([procurementId, approverId])
+  @@index([procurementId])
+  @@index([approverId])
+  @@map("procurement_approvers")
 }
 
 model EvaluatorReview {

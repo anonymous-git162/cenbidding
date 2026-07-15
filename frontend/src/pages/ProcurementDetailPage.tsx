@@ -6,7 +6,7 @@ import {
   Box, Grid, Card, CardContent, Typography, Button, Divider, TextField, Chip, List,
   ListItem, ListItemText, ListItemIcon, Paper, Dialog, DialogTitle, DialogContent,
   DialogActions, Tab, Tabs, Alert, LinearProgress, Avatar, Tooltip, CircularProgress,
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, MenuItem,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, MenuItem, Checkbox,
 } from '@mui/material';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -148,9 +148,9 @@ export default function ProcurementDetailPage() {
       else if (action === 'publishRfp') await api.post(`/procurements/${id}/rfp/publish`, { submissionDeadline: deadline || undefined });
       else if (action === 'cancel') await api.post(`/procurements/${id}/cancel`, { reason: comment });
       else if (action === 'reassign') {
-        const approverId = (dialog as any)?.approverId;
-        if (!approverId) throw new Error('Please select an approver');
-        await api.patch(`/procurements/${id}/approver`, { approverId });
+        const approverIds = (dialog as any)?.approverIds;
+        if (!approverIds || approverIds.length === 0) throw new Error('Please select at least one approver');
+        await api.patch(`/procurements/${id}/approver`, { approverIds });
       }
       setDialog(null);
       setComment('');
@@ -729,24 +729,30 @@ export default function ProcurementDetailPage() {
             </Box>
           ) : dialog?.type === 'reassign' ? (
             <Box>
-              <Alert severity="info" sx={{ mb: 2, borderRadius: 1 }}>Select a new approver for this procurement.</Alert>
-              {procurement.assignedApproverId && (
-                <Typography variant="body2" sx={{ mb: 1 }}>Current approver: <strong>{(procurement as any).approver?.fullName || 'Unknown'}</strong></Typography>
+              <Alert severity="info" sx={{ mb: 2, borderRadius: 1 }}>Select one or more approvers for this procurement.</Alert>
+              {(procurement as any).approverAssignments?.length > 0 && (
+                <Typography variant="body2" sx={{ mb: 1 }}>
+                  Current approver{(procurement as any).approverAssignments.length > 1 ? 's' : ''}: <strong>{((procurement as any).approverAssignments || []).map((a: any) => a.approver?.fullName).join(', ')}</strong>
+                </Typography>
               )}
               <TextField
-                select fullWidth size="small" label="New Approver"
-                value={(dialog as any).approverId || ''}
-                onChange={(e) => setDialog(prev => prev ? { ...prev, approverId: e.target.value } as any : null)}
+                select fullWidth size="small" label="Approvers" SelectProps={{ multiple: true, renderValue: (selected: any) => {
+                  const names = ((dialog as any).approverList || []).filter((a: any) => (selected as string[]).includes(a.id)).map((a: any) => a.fullName);
+                  return names.join(', ') || 'Select approvers...';
+                } }}
+                value={(dialog as any).approverIds || []}
+                onChange={(e) => setDialog(prev => prev ? { ...prev, approverIds: e.target.value as any } as any : null)}
                 onFocus={async () => {
                   if (!(dialog as any).approverList) {
                     try { const res = await api.get('/users', { params: { role: 'APPROVER', limit: 100 } }); setDialog(prev => prev ? { ...prev, approverList: res.data?.data || res.data || [] } as any : null); } catch { setError('Failed to load approvers'); }
                   }
                 }}
-                SelectProps={{ native: true }}
               >
-                <option value="">Select approver...</option>
                 {((dialog as any).approverList || []).map((a: any) => (
-                  <option key={a.id} value={a.id}>{a.fullName} ({a.email})</option>
+                  <MenuItem key={a.id} value={a.id}>
+                    <Checkbox checked={((dialog as any).approverIds || []).includes(a.id)} />
+                    <ListItemText primary={a.fullName} secondary={a.email} />
+                  </MenuItem>
                 ))}
               </TextField>
             </Box>
@@ -784,7 +790,7 @@ export default function ProcurementDetailPage() {
         <DialogActions sx={{ px: 3, py: 2 }}>
           <Button onClick={() => setDialog(null)} disabled={actionLoading}>Cancel</Button>
           <Button
-            variant="contained" onClick={() => handleAction(dialog!.type)} disabled={actionLoading || ((dialog?.type === 'publish' || dialog?.type === 'publishRfp') && (!deadline || new Date(deadline) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000))) || (dialog?.type !== 'approve' && dialog?.type !== 'publish' && dialog?.type !== 'publishRfp' && dialog?.type !== 'reassign' && dialog?.type !== 'announce' && dialog?.type !== 'signContract' && !comment) || (dialog?.type === 'reassign' && !(dialog as any)?.approverId) || (dialog?.type === 'announce' && !(dialog as any)?.winningVendorId)}
+            variant="contained" onClick={() => handleAction(dialog!.type)} disabled={actionLoading || ((dialog?.type === 'publish' || dialog?.type === 'publishRfp') && (!deadline || new Date(deadline) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000))) || (dialog?.type !== 'approve' && dialog?.type !== 'publish' && dialog?.type !== 'publishRfp' && dialog?.type !== 'reassign' && dialog?.type !== 'announce' && dialog?.type !== 'signContract' && !comment) || (dialog?.type === 'reassign' && (!(dialog as any)?.approverIds || (dialog as any)?.approverIds.length === 0)) || (dialog?.type === 'announce' && !(dialog as any)?.winningVendorId)}
             color={dialog?.type === 'reject' ? 'error' : dialog?.type === 'approve' ? 'success' : 'primary'}
             startIcon={actionLoading ? <CircularProgress size={16} color="inherit" /> : null}
           >
