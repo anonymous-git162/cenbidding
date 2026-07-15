@@ -57,6 +57,7 @@ export default function FileUploader({ onAttachmentsChange, initialAttachments }
   return (
     <Box>
       {deleteError && <Alert severity="error" sx={{ mb: 1 }} onClose={() => setDeleteError('')}>{deleteError}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 1 }} onClose={() => setError('')}>{error}</Alert>}
       <input ref={fileInputRef} type="file" hidden onChange={handleFileUpload} />
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <Button
