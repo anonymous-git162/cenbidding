@@ -23,6 +23,7 @@ const EVENT_ICONS: Record<string, string> = {
   RETURNED_FOR_REVISION: 'Undo', RFP_PUBLISHED: 'Publish', RFQ_OPEN: 'Publish',
   VENDOR_INVITED: 'Mail', VENDOR_ACCEPTED: 'CheckCircle', SENT_TO_APPROVAL: 'Send',
   RETURNED_FROM_APPROVAL: 'Undo', PENDING_APPROVAL: 'Approval',
+  PARTIAL_APPROVAL: 'Approval',
 };
 
 export default function ProcurementDetailPage() {

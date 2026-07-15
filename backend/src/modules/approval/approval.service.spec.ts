@@ -141,12 +141,14 @@ describe('ApprovalService', () => {
   });
 
   describe('approve', () => {
-    it('should approve a pending procurement', async () => {
+    it('should approve a pending procurement when all approvers have approved', async () => {
       prisma.procurement.findUnique.mockResolvedValue({
         ...mockProcurement,
         status: 'PENDING_APPROVAL',
       });
       prisma.approval.create.mockResolvedValue({});
+      prisma.approval.count.mockResolvedValue(1);
+      prisma.procurementApprover.count.mockResolvedValue(1);
       prisma.procurement.update.mockResolvedValue({
         ...mockProcurement,
         status: 'AWARD_APPROVED',
@@ -160,6 +162,33 @@ describe('ApprovalService', () => {
         'Looks good',
       );
       expect(result).toHaveProperty('status', 'AWARD_APPROVED');
+    });
+
+    it('should stay in PENDING_APPROVAL when not all approvers have approved', async () => {
+      prisma.procurement.findUnique.mockResolvedValue({
+        ...mockProcurement,
+        status: 'PENDING_APPROVAL',
+      });
+      prisma.approval.create.mockResolvedValue({});
+      prisma.approval.count.mockResolvedValue(1);
+      prisma.procurementApprover.count.mockResolvedValue(2);
+      prisma.procurement.update.mockResolvedValue({
+        ...mockProcurement,
+        status: 'PENDING_APPROVAL',
+      });
+      prisma.procurementTimeline.create.mockResolvedValue({});
+
+      const result = await service.approve(
+        'proc-1',
+        'approver-1',
+        'Looks good',
+      );
+      expect(result).toHaveProperty('status', 'PENDING_APPROVAL');
+      expect(prisma.procurementTimeline.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ eventType: 'PARTIAL_APPROVAL' }),
+        }),
+      );
     });
 
     it('should throw if not pending approval', async () => {

@@ -200,24 +200,52 @@ export class ApprovalService {
         data: { procurementId, approverId, decision: 'APPROVED', comment },
       });
 
+      const approvedCount = await tx.approval.count({
+        where: { procurementId, decision: 'APPROVED' },
+      });
+      const assignedCount = await tx.procurementApprover.count({
+        where: { procurementId },
+      });
+
+      if (assignedCount === 0 || approvedCount >= assignedCount) {
+        // All assigned approvers have approved (or no explicit assignments)
+        const updated = await tx.procurement.update({
+          where: { id: procurementId },
+          data: { status: 'AWARD_APPROVED', currentOwnerRole: 'PROCUREMENT', currentStage: 'AWARD_APPROVED' },
+        });
+
+        await tx.procurementTimeline.create({
+          data: {
+            procurementId,
+            eventType: 'APPROVED',
+            actorRole: 'APPROVER',
+            actorId: approverId,
+            metadata: { comment },
+          },
+        });
+
+        await this.auditService.log({
+          module: 'approval', entityType: 'Procurement', entityId: procurementId,
+          action: 'AWARD_APPROVED', actorId: approverId,
+        });
+
+        return updated;
+      }
+
+      // Not all approvers have approved yet — stay in PENDING_APPROVAL
       const updated = await tx.procurement.update({
         where: { id: procurementId },
-        data: { status: 'AWARD_APPROVED', currentOwnerRole: 'PROCUREMENT', currentStage: 'AWARD_APPROVED' },
+        data: { updatedAt: new Date() },
       });
 
       await tx.procurementTimeline.create({
         data: {
           procurementId,
-          eventType: 'APPROVED',
+          eventType: 'PARTIAL_APPROVAL',
           actorRole: 'APPROVER',
           actorId: approverId,
-          metadata: { comment },
+          metadata: { comment, approvedCount, assignedCount },
         },
-      });
-
-      await this.auditService.log({
-        module: 'approval', entityType: 'Procurement', entityId: procurementId,
-        action: 'AWARD_APPROVED', actorId: approverId,
       });
 
       return updated;
