@@ -29,6 +29,19 @@ export class LoginDto {
   challengeAnswer?: string;
 }
 
+export class ChangePasswordDto {
+  @IsString()
+  currentPassword: string;
+
+  @IsString()
+  @MinLength(8)
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
+    message:
+      'New password must contain at least one uppercase letter, one lowercase letter, and one number',
+  })
+  newPassword: string;
+}
+
 export class RegisterDto {
   @IsEmail()
   email: string;

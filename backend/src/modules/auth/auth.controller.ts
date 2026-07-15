@@ -12,7 +12,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
-import { LoginDto, RegisterDto } from './dto/auth.dto';
+import { LoginDto, RegisterDto, ChangePasswordDto } from './dto/auth.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { Public } from '../../common/decorators/public.decorator';
 
@@ -119,13 +119,13 @@ export class AuthController {
   @ApiOperation({ summary: 'Change user password' })
   async changePassword(
     @Request() req: any,
-    @Body() body: { currentPassword: string; newPassword: string },
+    @Body() dto: ChangePasswordDto,
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.authService.changePassword(
       req.user.id,
-      body.currentPassword,
-      body.newPassword,
+      dto.currentPassword,
+      dto.newPassword,
     );
     res.clearCookie('accessToken', { path: '/' });
     res.clearCookie('refreshToken', { path: '/' });

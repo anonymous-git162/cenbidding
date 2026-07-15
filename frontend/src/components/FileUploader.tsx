@@ -32,8 +32,8 @@ export default function FileUploader({ onAttachmentsChange, initialAttachments }
       const next = [...attachments, { id: res.data.id, fileName: res.data.fileName, fileSize: res.data.fileSize }];
       setAttachments(next);
       onAttachmentsChange(next);
-    } catch {
-      /* ignore */
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Upload failed');
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

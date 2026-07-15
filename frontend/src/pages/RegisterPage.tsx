@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Box, Card, CardContent, TextField, Button, Typography, Alert, useTheme } from '@mui/material';
 import api from '../services/api';
@@ -8,6 +8,9 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const successTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => () => clearTimeout(successTimer.current), []);
 
   const isValidEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
   const isValidPassword = (pw: string) => /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(pw);
@@ -30,7 +33,8 @@ export default function RegisterPage() {
         phone: form.phone || undefined, address: form.address || undefined,
       });
       setSuccess('Registration submitted! An administrator will review and approve your account.');
-      setTimeout(() => setSuccess(''), 5000);
+      clearTimeout(successTimer.current);
+      successTimer.current = setTimeout(() => setSuccess(''), 5000);
       setForm({ email: '', password: '', confirmPassword: '', fullName: '', companyName: '', taxId: '', phone: '', address: '' });
     } catch (err: any) {
       setError(err.response?.data?.message || 'Registration failed');

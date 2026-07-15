@@ -111,6 +111,8 @@ export default function ProcurementListPage() {
   const [currencyOptions, setCurrencyOptions] = useState<{ currency: string; count: number }[]>([]);
   const searchTimer = useRef<any>(null);
 
+  useEffect(() => () => clearTimeout(searchTimer.current), []);
+
   const updateFilter = useCallback((patch: Partial<Filters>) => {
     setFilters((prev) => {
       const next = { ...prev, ...patch, ...(patch.search !== undefined || patch.status !== undefined || patch.requestType !== undefined ? { page: 0 } : {}) };

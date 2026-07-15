@@ -121,18 +121,25 @@ export class ApprovalService {
       assignedApproverId = deptApprover?.id || null;
     }
 
-    await this.prisma.procurement.update({
-      where: { id: procurementId },
-      data: {
-        status: 'PENDING_APPROVAL',
-        currentOwnerRole: 'APPROVER',
-        assignedApproverId,
-      },
-    });
+    await this.prisma.$transaction(async (tx) => {
+      await tx.procurement.update({
+        where: { id: procurementId },
+        data: {
+          status: 'PENDING_APPROVAL',
+          currentOwnerRole: 'APPROVER',
+          assignedApproverId,
+        },
+      });
 
-    if (assignedApproverId) {
-      await this.syncApproverAssignments(procurementId, [assignedApproverId]);
-    }
+      if (assignedApproverId) {
+        await tx.procurementApprover.deleteMany({
+          where: { procurementId },
+        });
+        await tx.procurementApprover.createMany({
+          data: [{ procurementId, approverId: assignedApproverId }],
+        });
+      }
+    });
 
     await this.prisma.procurementTimeline.create({
       data: {
@@ -243,8 +250,8 @@ export class ApprovalService {
           latestDecisions.set(a.approverId, a.decision);
         }
       }
-      const allApproved = assignedApprovers.length === 0
-        || assignedApprovers.every(aa => latestDecisions.get(aa.approverId) === 'APPROVED');
+      const allApproved = assignedApprovers.length > 0
+        && assignedApprovers.every(aa => latestDecisions.get(aa.approverId) === 'APPROVED');
 
       if (allApproved) {
         // All assigned approvers have approved (or no explicit assignments)
@@ -293,7 +300,7 @@ export class ApprovalService {
           eventType: 'PARTIAL_APPROVAL',
           actorRole: 'APPROVER',
           actorId: approverId,
-          metadata: { comment, approvedCount: assignedApprovers.filter(aa => latestDecisions.get(aa.approverId) === 'APPROVED').length + 1, assignedCount: assignedApprovers.length },
+          metadata: { comment, approvedCount: assignedApprovers.filter(aa => latestDecisions.get(aa.approverId) === 'APPROVED').length, assignedCount: assignedApprovers.length },
         },
       });
 
@@ -307,7 +314,7 @@ export class ApprovalService {
     });
     if (!procurement) throw new NotFoundException('Procurement not found');
 
-    const result = await this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx) => {
       await tx.approval.create({
         data: {
           procurementId,
@@ -341,19 +348,17 @@ export class ApprovalService {
         action: 'RETURNED_FROM_APPROVAL', actorId: approverId,
       });
 
+      await this.notificationsService.create(procurement.requesterId, {
+        title: 'Approval Returned',
+        message: `"${procurement.title || procurement.requestNo}" was returned by an approver${reason ? `: ${reason}` : ''}`,
+        type: 'warning',
+        entityType: 'Procurement',
+        entityId: procurementId,
+        link: `/procurements/${procurementId}`,
+      });
+
       return updated;
     });
-
-    await this.notificationsService.create(procurement.requesterId, {
-      title: 'Approval Returned',
-      message: `"${procurement.title || procurement.requestNo}" was returned by an approver${reason ? `: ${reason}` : ''}`,
-      type: 'warning',
-      entityType: 'Procurement',
-      entityId: procurementId,
-      link: `/procurements/${procurementId}`,
-    });
-
-    return result;
   }
 
   async reject(procurementId: string, approverId: string, reason?: string) {
@@ -362,7 +367,7 @@ export class ApprovalService {
     });
     if (!procurement) throw new NotFoundException('Procurement not found');
 
-    const result = await this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx) => {
       await tx.approval.create({
         data: {
           procurementId,
@@ -397,19 +402,17 @@ export class ApprovalService {
         action: 'REJECTED', actorId: approverId,
       });
 
+      await this.notificationsService.create(procurement.requesterId, {
+        title: 'Approval Rejected',
+        message: `"${procurement.title || procurement.requestNo}" was rejected by an approver${reason ? `: ${reason}` : ''}`,
+        type: 'error',
+        entityType: 'Procurement',
+        entityId: procurementId,
+        link: `/procurements/${procurementId}`,
+      });
+
       return updated;
     });
-
-    await this.notificationsService.create(procurement.requesterId, {
-      title: 'Approval Rejected',
-      message: `"${procurement.title || procurement.requestNo}" was rejected by an approver${reason ? `: ${reason}` : ''}`,
-      type: 'error',
-      entityType: 'Procurement',
-      entityId: procurementId,
-      link: `/procurements/${procurementId}`,
-    });
-
-    return result;
   }
 
   async getOverdueApprovals() {
@@ -458,23 +461,20 @@ export class ApprovalService {
         (1000 * 60 * 60),
     );
 
-    // Create escalation notification for admin
+    // Notify admins of escalation
     const admins = await this.prisma.user.findMany({
       where: { role: UserRole.ADMIN, isActive: true },
       select: { id: true },
     });
 
-    for (const admin of admins) {
-      await this.prisma.notification.create({
-        data: {
-          userId: admin.id,
-          title: `ESCALATION: ${procurement.requestNo} overdue by ${hoursPending}h`,
-          message: `${procurement.title} has been pending approval for ${hoursPending} hours`,
-          type: 'warning',
-          entityType: 'Procurement',
-          entityId: procurementId,
-          link: `/procurements/${procurementId}`,
-        },
+    if (admins.length > 0) {
+      await this.notificationsService.createForUsers(admins.map(a => a.id), {
+        title: `ESCALATION: ${procurement.requestNo} overdue by ${hoursPending}h`,
+        message: `${procurement.title} has been pending approval for ${hoursPending} hours`,
+        type: 'warning',
+        entityType: 'Procurement',
+        entityId: procurementId,
+        link: `/procurements/${procurementId}`,
       });
     }
 

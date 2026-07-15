@@ -1,5 +1,5 @@
 import { Icon } from '../components/Icon';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   Box, Card, CardContent, Typography, Button, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, TextField, Slider, Alert, Divider, Tabs, Tab, Chip, CircularProgress,
@@ -29,6 +29,12 @@ export default function EvaluationPage() {
   const [criteriaForm, setCriteriaForm] = useState<{ name: string; weight: number; maxScore: number }[]>([]);
   const [aiLanguage, setAiLanguage] = useState('English');
   const LANGUAGES = ['English', 'Thai', 'Arabic', 'Japanese', 'Chinese', 'Vietnamese'];
+  const successTimer = useRef<ReturnType<typeof setTimeout>>();
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => { mountedRef.current = false; clearTimeout(successTimer.current); };
+  }, []);
 
   useEffect(() => {
     api.get('/procurements', { params: { limit: 50 } })
@@ -43,13 +49,15 @@ export default function EvaluationPage() {
 
   useEffect(() => {
     if (!selected) { setReviews([]); setSubmissions([]); setConsolidation(null); setCriteria([]); return; }
+    let cancelled = false;
     setLoading(true);
     Promise.all([
-      api.get(`/evaluation/reviews/${selected}`),
-      api.get(`/rfq-submissions/procurement/${selected}`),
+      api.get(`/evaluation/reviews/${selected}`).catch(() => ({ data: [] })),
+      api.get(`/rfq-submissions/procurement/${selected}`).catch(() => ({ data: [] })),
       api.get(`/evaluation/consolidation/${selected}`).catch(() => ({ data: null })),
-      api.get(`/evaluation/${selected}/criteria`),
+      api.get(`/evaluation/${selected}/criteria`).catch(() => ({ data: [] })),
     ]).then(([reviewsRes, subsRes, consRes, criteriaRes]) => {
+      if (cancelled) return;
       const existingReviews = reviewsRes.data || [];
       const c = criteriaRes.data || [];
       setReviews(existingReviews);
@@ -66,8 +74,9 @@ export default function EvaluationPage() {
         seeded[r.vendorId] = { score: r.score, comment: r.comment || '', criterionScores: r.criterionScores || undefined };
       }
       setScores(prev => ({ ...prev, ...seeded }));
-    }).catch(err => setError(err.response?.data?.message || 'Failed'))
-      .finally(() => setLoading(false));
+    }).catch(err => { if (!cancelled) setError(err.response?.data?.message || 'Failed'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [selected]);
 
   const submitReview = async (vendorId: string) => {
@@ -78,11 +87,14 @@ export default function EvaluationPage() {
         procurementId: selected, vendorId, score: s.score, comment: s.comment,
         criterionScores: s.criterionScores || undefined,
       });
+      if (!mountedRef.current) return;
       const res = await api.get(`/evaluation/reviews/${selected}`);
+      if (!mountedRef.current) return;
       setReviews(res.data || []);
       setSuccess('Score submitted successfully!');
-      setTimeout(() => setSuccess(''), 3000);
-    } catch (err: any) { setError(err.response?.data?.message || 'Failed'); }
+      clearTimeout(successTimer.current);
+      successTimer.current = setTimeout(() => { if (mountedRef.current) setSuccess(''); }, 3000);
+    } catch (err: any) { if (mountedRef.current) setError(err.response?.data?.message || 'Failed'); }
   };
 
   const computeWeightedScore = (criterionScores: { criteriaIndex: number; score: number }[]) => {
@@ -279,7 +291,8 @@ export default function EvaluationPage() {
                           </TableHead>
                           <TableBody>
                             {submissions.map((sub) => {
-                              const s = scores[sub.vendorId] || { score: 50, comment: '', criterionScores: criteria.map((_, i) => ({ criteriaIndex: i, score: 50 })) };
+                              const existing = scores[sub.vendorId];
+                              const s = { score: 50, comment: '', ...existing };
                               if (!s.criterionScores && criteria.length) s.criterionScores = criteria.map((_, i) => ({ criteriaIndex: i, score: 50 }));
                               const weighted = s.criterionScores ? computeWeightedScore(s.criterionScores) : s.score;
                               const isScored = reviews.some((r: any) => String(r.vendorId) === String(sub.vendorId));

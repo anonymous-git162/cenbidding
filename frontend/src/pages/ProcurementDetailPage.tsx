@@ -55,16 +55,16 @@ export default function ProcurementDetailPage() {
       setTimeline(tlRes.data || []);
 
       // Load evaluations if available
-      try {
-        const evalRes = await api.get(`/evaluation/reviews/${id}`);
+      const evalRes = await api.get(`/evaluation/reviews/${id}`).catch(() => null);
+      if (evalRes) {
         setProcurement((prev: any) => ({ ...prev, evaluations: evalRes.data || [] }));
-      } catch { /* no evaluations yet */ }
+      }
 
       // Load consolidation if available
-      try {
-        const consRes = await api.get(`/evaluation/consolidation/${id}`);
+      const consRes = await api.get(`/evaluation/consolidation/${id}`).catch(() => null);
+      if (consRes) {
         setProcurement((prev: any) => ({ ...prev, consolidation: consRes.data }));
-      } catch { /* no consolidation yet */ }
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load procurement');
     } finally {

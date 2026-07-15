@@ -114,6 +114,8 @@ describe('EbiddingService', () => {
         status: 'OPEN',
         startsAt: new Date(),
       });
+      prisma.procurement.findUnique.mockResolvedValue({ title: 'Test' });
+      prisma.vendorInvitation.findMany.mockResolvedValue([]);
 
       const result = await service.openRound('round-1', 'user-1');
       expect(result).toHaveProperty('status', 'OPEN');

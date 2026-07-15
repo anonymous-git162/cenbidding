@@ -180,7 +180,10 @@ export default function BiddingRoomPage() {
                 return <option key={p.id} value={p.id}>{p.requestNo} - {p.title} [{label}]</option>;
               })}
             </TextField>
-            {user?.role === 'PROCUREMENT' && procurementId && !['EVALUATION','PENDING_APPROVAL','RETURNED_FROM_APPROVAL','AWARD_APPROVED','AWARD_ANNOUNCED','COMPLETED','REJECTED','CANCELLED'].includes(procurements.find(p => p.id === procurementId)?.status || '') && (
+            {user?.role === 'PROCUREMENT' && procurementId && (() => {
+              const p = procurements.find(p => p.id === procurementId);
+              return p && !['EVALUATION','PENDING_APPROVAL','RETURNED_FROM_APPROVAL','AWARD_APPROVED','AWARD_ANNOUNCED','COMPLETED','REJECTED','CANCELLED'].includes(p.status);
+            })() && (
               <Button variant="contained" startIcon={<Icon name="Add" />} onClick={() => setDialogOpen(true)}>Create Round</Button>
             )}
           </Box>

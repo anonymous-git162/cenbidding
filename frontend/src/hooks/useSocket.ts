@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -8,6 +8,7 @@ export function useSocket() {
   const { user } = useAuth();
   const socketRef = useRef<Socket | null>(null);
   const listenersRef = useRef<Map<string, Set<Function>>>(new Map());
+  const [connected, setConnected] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -16,6 +17,9 @@ export function useSocket() {
       withCredentials: true,
       transports: ['websocket', 'polling'],
     });
+
+    socket.on('connect', () => setConnected(true));
+    socket.on('disconnect', () => setConnected(false));
 
     socket.on('notification', (data: any) => {
       const listeners = listenersRef.current.get('notification');
@@ -34,8 +38,13 @@ export function useSocket() {
     socketRef.current = socket;
 
     return () => {
+      socket.off('connect');
+      socket.off('disconnect');
       socket.disconnect();
       socketRef.current = null;
+      setConnected(false);
+      listenersRef.current.forEach((_, event) => socket.off(event));
+      listenersRef.current.clear();
     };
   }, [user]);
 
@@ -54,5 +63,5 @@ export function useSocket() {
     socketRef.current?.emit(event, data);
   }, []);
 
-  return { on, emit, connected: socketRef.current?.connected || false };
+  return { on, emit, connected };
 }

@@ -86,13 +86,22 @@ export class NotificationsService {
       })),
     });
 
-    // Send real-time notifications via WebSocket
-    this.gateway?.sendBulkNotification(userIds, {
-      id: 'bulk',
-      title: data.title,
-      message: data.message,
-      link: data.link,
-    });
+    // Send real-time notifications via WebSocket with real IDs
+    if (this.gateway) {
+      const created = await this.prisma.notification.findMany({
+        where: { userId: { in: userIds } },
+        orderBy: { createdAt: 'desc' },
+        take: userIds.length,
+      });
+      for (const n of created) {
+        this.gateway.sendNotification(n.userId, {
+          id: n.id,
+          title: n.title,
+          message: n.message,
+          link: n.link || undefined,
+        });
+      }
+    }
 
     // Send email notifications
     const users = await this.prisma.user.findMany({

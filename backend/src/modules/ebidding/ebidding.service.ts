@@ -96,7 +96,11 @@ export class EbiddingService {
 
     const updated = await this.prisma.ebiddingRound.update({
       where: { id },
-      data: { status: 'OPEN', startsAt: new Date() },
+      data: {
+        status: 'OPEN',
+        startsAt: new Date(),
+        endsAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      },
     });
 
     await this.prisma.procurement.update({
@@ -150,6 +154,7 @@ export class EbiddingService {
       );
     } catch (error) {
       this.logger.error(`Failed to send round-open notification: ${error}`);
+      throw error;
     }
   }
 
@@ -211,36 +216,38 @@ export class EbiddingService {
     if (!invitation)
       throw new BadRequestException('Not invited or invitation not accepted');
 
-    const existingBid = await this.prisma.ebiddingResponse.findFirst({
-      where: { ebiddingRoundId: roundId, vendorId: vendor.id },
-    });
+    return this.prisma.$transaction(async (tx) => {
+      const existingBid = await tx.ebiddingResponse.findFirst({
+        where: { ebiddingRoundId: roundId, vendorId: vendor.id },
+      });
 
-    if (existingBid) {
-      const updated = await this.prisma.ebiddingResponse.update({
-        where: { id: existingBid.id },
-        data: { bidAmount, submittedAt: new Date() },
+      if (existingBid) {
+        const updated = await tx.ebiddingResponse.update({
+          where: { id: existingBid.id },
+          data: { bidAmount, submittedAt: new Date() },
+        });
+
+        await this.auditService.log({
+          module: 'ebidding', entityType: 'EbiddingResponse', entityId: updated.id,
+          action: 'BID_PLACED', actorId: vendorUserId,
+          afterData: { bidAmount },
+        });
+
+        return updated;
+      }
+
+      const created = await tx.ebiddingResponse.create({
+        data: { ebiddingRoundId: roundId, vendorId: vendor.id, bidAmount },
       });
 
       await this.auditService.log({
-        module: 'ebidding', entityType: 'EbiddingResponse', entityId: updated.id,
+        module: 'ebidding', entityType: 'EbiddingResponse', entityId: created.id,
         action: 'BID_PLACED', actorId: vendorUserId,
         afterData: { bidAmount },
       });
 
-      return updated;
-    }
-
-    const created = await this.prisma.ebiddingResponse.create({
-      data: { ebiddingRoundId: roundId, vendorId: vendor.id, bidAmount },
+      return created;
     });
-
-    await this.auditService.log({
-      module: 'ebidding', entityType: 'EbiddingResponse', entityId: created.id,
-      action: 'BID_PLACED', actorId: vendorUserId,
-      afterData: { bidAmount },
-    });
-
-    return created;
   }
 
   async getRounds(procurementId: string, user?: { id: string; role: string }) {

@@ -1,5 +1,5 @@
 import { Icon } from '../components/Icon';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   Box, Card, CardContent, Typography, Button, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Chip, Dialog, DialogTitle, DialogContent, DialogActions,
@@ -35,6 +35,9 @@ interface Department { id: string; name: string; }
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [createdUser, setCreatedUser] = useState<any>(null);
+  const successTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => () => clearTimeout(successTimer.current), []);
   const [createReveal, setCreateReveal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
@@ -124,7 +127,8 @@ interface Department { id: string; name: string; }
       const res = await api.post('/users', payload);
       setCreatedUser({ ...res.data, password: form.password });
       setSuccess('User created successfully');
-      setTimeout(() => setSuccess(''), 3000);
+      clearTimeout(successTimer.current);
+      successTimer.current = setTimeout(() => setSuccess(''), 3000);
     setForm({ email: '', password: '', fullName: '', role: 'REQUESTER', propertyId: '', departmentId: '', managerId: '', companyName: '', newPassword: '', confirmPassword: '', isActive: true });
       load();
     } catch (err: any) {

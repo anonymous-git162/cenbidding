@@ -196,7 +196,7 @@ export default function ReportingPage() {
             <Typography variant="body2" color="text.secondary">No recent activity</Typography>
           )}
           {stats.recentActivity.slice(0, 10).map((item, idx) => (
-            <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 1, borderBottom: idx < 9 ? '1px solid' : 'none', borderColor: 'divider' }}>
+            <Box key={`${item.entityType}-${item.action}-${item.createdAt}`} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 1, borderBottom: idx < 9 ? '1px solid' : 'none', borderColor: 'divider' }}>
               <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: 'info.50', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Icon name="Timeline" sx={{ fontSize: 16, color: 'info.main' }} />
               </Box>

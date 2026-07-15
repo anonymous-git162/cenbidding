@@ -1,5 +1,5 @@
 import { Icon } from '../components/Icon';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   Box, Card, CardContent, Typography, Button, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Chip, Dialog, DialogTitle, DialogContent, DialogActions,
@@ -19,6 +19,9 @@ export default function InvitationsPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(true);
+  const successTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => () => clearTimeout(successTimer.current), []);
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFrom, setDateFrom] = useState('');
@@ -55,7 +58,8 @@ export default function InvitationsPage() {
       await api.post('/vendor-invitations', { procurementId, vendorIds });
       setDialogOpen(false);
       setSuccess('Invitations sent successfully');
-      setTimeout(() => setSuccess(''), 3000);
+      clearTimeout(successTimer.current);
+      successTimer.current = setTimeout(() => setSuccess(''), 3000);
       setProcurementId('');
       setVendorIds([]);
       load();
@@ -69,7 +73,8 @@ export default function InvitationsPage() {
     try {
       await api.put(`/vendor-invitations/${id}/accept`);
       setSuccess('Invitation accepted');
-      setTimeout(() => setSuccess(''), 3000);
+      clearTimeout(successTimer.current);
+      successTimer.current = setTimeout(() => setSuccess(''), 3000);
       load();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed');
@@ -81,7 +86,8 @@ export default function InvitationsPage() {
     try {
       await api.put(`/vendor-invitations/${id}/decline`);
       setSuccess('Invitation declined');
-      setTimeout(() => setSuccess(''), 3000);
+      clearTimeout(successTimer.current);
+      successTimer.current = setTimeout(() => setSuccess(''), 3000);
       load();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed');

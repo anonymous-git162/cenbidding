@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Card, CardContent, Typography, TextField, Button, Alert, IconButton } from '@mui/material';
 import { Icon } from '../components/Icon';
@@ -12,6 +12,9 @@ export default function ChangePasswordPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const successTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => () => clearTimeout(successTimer.current), []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +35,8 @@ export default function ChangePasswordPage() {
     try {
       await api.post('/auth/change-password', { currentPassword, newPassword });
       setSuccess('Password changed successfully');
-      setTimeout(() => setSuccess(''), 3000);
+      clearTimeout(successTimer.current);
+      successTimer.current = setTimeout(() => setSuccess(''), 3000);
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');

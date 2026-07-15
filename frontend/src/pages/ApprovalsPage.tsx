@@ -24,7 +24,7 @@ export default function ApprovalsPage() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [user]);
 
   const load = async () => {
     try {
@@ -57,14 +57,16 @@ export default function ApprovalsPage() {
 
   const handleBulkAction = async (action: string) => {
     setError('');
-    try {
-      await Promise.all(Array.from(selected).map(id => api.post(`/approval/${id}/${action}`, {})));
-      setSelected(new Set());
-      setSuccess(`${action.charAt(0).toUpperCase() + action.slice(1)}d ${selected.size} item(s)`);
-      load();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Bulk action failed');
-    }
+    setSuccess('');
+    const results = await Promise.allSettled(
+      Array.from(selected).map(id => api.post(`/approval/${id}/${action}`, {})),
+    );
+    const succeeded = results.filter(r => r.status === 'fulfilled').length;
+    const failed = results.filter(r => r.status === 'rejected').length;
+    setSelected(new Set());
+    if (succeeded > 0) setSuccess(`${action.charAt(0).toUpperCase() + action.slice(1)}d ${succeeded} item(s)`);
+    if (failed > 0) setError(`${failed} item(s) failed`);
+    load();
   };
 
   const toggleSelect = (id: string) => {
