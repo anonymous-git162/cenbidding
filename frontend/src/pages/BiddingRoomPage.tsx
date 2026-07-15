@@ -7,6 +7,7 @@ import {
 } from '@mui/material';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useSocket } from '../hooks/useSocket';
 import { CURRENCY_MAP } from '../utils/constants';
 import FileUploader from '../components/FileUploader';
 
@@ -29,6 +30,7 @@ interface Round {
 
 export default function BiddingRoomPage() {
   const { user } = useAuth();
+  const { on, emit } = useSocket();
   const [rounds, setRounds] = useState<Round[]>([]);
   const [selectedRound, setSelectedRound] = useState<Round | null>(null);
   const [roundBids, setRoundBids] = useState<Bid[]>([]);
@@ -56,6 +58,17 @@ export default function BiddingRoomPage() {
   useEffect(() => { loadProcurements(); }, []);
   useEffect(() => { if (procurementId) loadRounds(); }, [procurementId]);
   useEffect(() => { if (selectedRound) loadRoundBids(); }, [selectedRound]);
+
+  // Real-time bid updates via WebSocket
+  useEffect(() => {
+    if (!selectedRound) return;
+    emit('join', { room: `bidding:${selectedRound.id}` });
+    const unsub = on('bid:update', () => { loadRoundBids(); });
+    return () => {
+      unsub();
+      emit('leave', { room: `bidding:${selectedRound.id}` });
+    };
+  }, [selectedRound?.id]);
 
   const loadProcurements = async () => {
     try {

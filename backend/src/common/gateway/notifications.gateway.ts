@@ -143,4 +143,8 @@ export class NotificationsGateway
   ) {
     userIds.forEach((userId) => this.sendNotification(userId, notification));
   }
+
+  sendBidUpdate(roundId: string, data: any) {
+    this.server.to(`bidding:${roundId}`).emit('bid:update', data);
+  }
 }

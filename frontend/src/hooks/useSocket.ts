@@ -35,6 +35,13 @@ export function useSocket() {
       }
     });
 
+    socket.on('bid:update', (data: any) => {
+      const listeners = listenersRef.current.get('bid:update');
+      if (listeners) {
+        listeners.forEach(fn => fn(data));
+      }
+    });
+
     socketRef.current = socket;
 
     return () => {

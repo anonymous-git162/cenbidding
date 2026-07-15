@@ -157,4 +157,8 @@ export class NotificationsService {
       where: { id: notificationId, userId },
     });
   }
+
+  sendBidUpdate(roundId: string, data: any) {
+    this.gateway?.sendBidUpdate(roundId, data);
+  }
 }

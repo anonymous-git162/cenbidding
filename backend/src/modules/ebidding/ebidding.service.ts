@@ -233,6 +233,7 @@ export class EbiddingService {
           afterData: { bidAmount },
         });
 
+        this.notificationsService.sendBidUpdate(roundId, { roundId, vendorId: vendor.id, bidAmount, vendorName: vendor.companyName });
         return updated;
       }
 
@@ -246,6 +247,7 @@ export class EbiddingService {
         afterData: { bidAmount },
       });
 
+      this.notificationsService.sendBidUpdate(roundId, { roundId, vendorId: vendor.id, bidAmount, vendorName: vendor.companyName });
       return created;
     });
   }

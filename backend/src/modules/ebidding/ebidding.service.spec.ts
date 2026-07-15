@@ -38,7 +38,7 @@ describe('EbiddingService', () => {
         { provide: PrismaService, useValue: prisma },
         {
           provide: NotificationsService,
-          useValue: { create: jest.fn(), createForUsers: jest.fn() },
+          useValue: { create: jest.fn(), createForUsers: jest.fn(), sendBidUpdate: jest.fn() },
         },
         { provide: AuditService, useValue: { log: jest.fn() } },
       ],
