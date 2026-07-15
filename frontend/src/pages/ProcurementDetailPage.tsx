@@ -270,7 +270,7 @@ export default function ProcurementDetailPage() {
           {role === 'PROCUREMENT' && status === 'AWARD_APPROVED' && (
             <Button variant="contained" color="success" startIcon={<Icon name="Publish" />} onClick={() => setDialog({ type: 'announce', title: 'Announce Award' })}>Announce Award</Button>
           )}
-          {role === 'PROCUREMENT' && status === 'AWARD_ANNOUNCED' && (
+          {role === 'PROCUREMENT' && status === 'AWARD_ANNOUNCED' && !(procurement as any).result?.contractSentAt && (
             <Button variant="contained" color="warning" startIcon={<Icon name="Description" />} onClick={() => handleAction('sendContract')}>Send Contract</Button>
           )}
           {role === 'VENDOR' && status === 'AWARD_ANNOUNCED' && (procurement as any).result?.contractSentAt && !(procurement as any).result?.contractSignedAt && (
