@@ -264,6 +264,13 @@ export class ProcurementsController {
     return this.procurementsService.startEbidding(id, req.user.id);
   }
 
+  @Post(':id/ebidding/open')
+  @Roles(UserRole.PROCUREMENT)
+  @ApiOperation({ summary: 'Open eBidding after preparation' })
+  openEbidding(@Param('id') id: string, @Request() req: any) {
+    return this.procurementsService.openEbidding(id, req.user.id);
+  }
+
   @Post(':id/ebidding/complete')
   @Roles(UserRole.PROCUREMENT)
   @ApiOperation({ summary: 'Close eBidding and move to evaluation' })

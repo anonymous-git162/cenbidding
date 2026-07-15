@@ -28,6 +28,7 @@ describe('ProcurementsController', () => {
       draftRfp: jest.fn(),
       completeVendorResponse: jest.fn(),
       startEbidding: jest.fn(),
+      openEbidding: jest.fn(),
       completeEbidding: jest.fn(),
       completeEvaluation: jest.fn(),
       approveProcurement: jest.fn(),

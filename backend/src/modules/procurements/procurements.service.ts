@@ -590,6 +590,16 @@ export class ProcurementsService {
     );
   }
 
+  async openEbidding(id: string, userId: string) {
+    return this.transition(
+      id,
+      'EBIDDING_OPEN',
+      'PROCUREMENT',
+      userId,
+      'PROCUREMENT',
+    );
+  }
+
   async completeEbidding(id: string, userId: string) {
     const procurement = await this.prisma.procurement.findUnique({
       where: { id },

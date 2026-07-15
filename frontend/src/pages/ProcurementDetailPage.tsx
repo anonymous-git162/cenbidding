@@ -130,6 +130,7 @@ export default function ProcurementDetailPage() {
       } else if (action === 'publish') await api.post(`/procurements/${id}/publish`, { submissionDeadline: deadline || undefined });
       else if (action === 'vendorResponse') await api.post(`/procurements/${id}/vendor-response/complete`);
       else if (action === 'startEbidding') await api.post(`/procurements/${id}/ebidding/start`);
+      else if (action === 'openEbidding') await api.post(`/procurements/${id}/ebidding/open`);
       else if (action === 'completeEbidding') await api.post(`/procurements/${id}/ebidding/complete`);
       else if (action === 'completeEvaluation') await api.post(`/procurements/${id}/evaluation/complete`);
       else if (action === 'announce') {
@@ -239,9 +240,12 @@ export default function ProcurementDetailPage() {
           {role === 'PROCUREMENT' && status === 'VENDOR_RESPONSE_IN_PROGRESS' && (
             <Button variant="contained" color="warning" startIcon={<Icon name="Gavel" />} onClick={() => handleAction('startEbidding')}>Start E-Bidding</Button>
           )}
-           {role === 'PROCUREMENT' && status === 'EBIDDING_PREP' && (
-             <Button variant="contained" color="warning" startIcon={<Icon name="Gavel" />} onClick={() => handleAction('completeEbidding')}>Complete E-Bidding</Button>
-           )}
+            {role === 'PROCUREMENT' && status === 'EBIDDING_PREP' && (
+              <Button variant="contained" color="warning" startIcon={<Icon name="Gavel" />} onClick={() => handleAction('openEbidding')}>Open E-Bidding</Button>
+            )}
+            {role === 'PROCUREMENT' && status === 'EBIDDING_PREP' && (
+              <Button variant="outlined" color="warning" startIcon={<Icon name="CheckCircle" />} onClick={() => handleAction('completeEbidding')} sx={{ ml: 1 }}>Skip to Evaluation</Button>
+            )}
            {role === 'PROCUREMENT' && status === 'EBIDDING_OPEN' && (
              <Button variant="contained" color="warning" startIcon={<Icon name="Gavel" />} onClick={() => handleAction('completeEbidding')}>Close E-Bidding</Button>
            )}
