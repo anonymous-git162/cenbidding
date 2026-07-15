@@ -335,7 +335,7 @@ export default function ProcurementDetailPage() {
               <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ px: 2, '& .MuiTab-root': { textTransform: 'none', fontWeight: 500 } }}>
                 <Tab label="Overview" />
                 {role !== 'VENDOR' && <Tab label="Vendors" />}
-                <Tab label="Submissions" />
+                {role !== 'VENDOR' && <Tab label="Submissions" />}
                 {role !== 'VENDOR' && <Tab label="Evaluation" />}
               </Tabs>
             </Box>
@@ -452,7 +452,7 @@ export default function ProcurementDetailPage() {
                 </Box>
               )}
 
-              {(tab === 2 || (role === 'VENDOR' && tab === 1)) && (
+              {tab === 2 && (
                 <Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                     <Typography variant="subtitle2" fontWeight={600} color="text.secondary">Vendor Submissions</Typography>
