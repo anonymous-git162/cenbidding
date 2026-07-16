@@ -28,6 +28,7 @@ export default function EvaluationPage() {
   const [criteriaDialog, setCriteriaDialog] = useState(false);
   const [criteriaForm, setCriteriaForm] = useState<{ name: string; weight: number; maxScore: number }[]>([]);
   const [aiLanguage, setAiLanguage] = useState('English');
+  const [justScored, setJustScored] = useState<Set<string>>(new Set());
   const LANGUAGES = ['English', 'Thai', 'Arabic', 'Japanese', 'Chinese', 'Vietnamese'];
   const successTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const mountedRef = useRef(true);
@@ -91,6 +92,8 @@ export default function EvaluationPage() {
       const res = await api.get(`/evaluation/reviews/${selected}`);
       if (!mountedRef.current) return;
       setReviews(res.data || []);
+      setJustScored(prev => new Set(prev).add(vendorId));
+      setTimeout(() => { if (mountedRef.current) setJustScored(prev => { const next = new Set(prev); next.delete(vendorId); return next; }); }, 1500);
       setSuccess('Score submitted successfully!');
       clearTimeout(successTimer.current);
       successTimer.current = setTimeout(() => { if (mountedRef.current) setSuccess(''); }, 3000);
@@ -211,6 +214,7 @@ export default function EvaluationPage() {
 
   return (
     <Box>
+      <style>{`@keyframes scoreFlash { 0% { background-color: #dcfce7; } 100% { background-color: inherit; } }`}</style>
       <Typography variant="h5" fontWeight={700} sx={{ mb: 3, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>Evaluation Queue</Typography>
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
       {success && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>{success}</Alert>}
@@ -296,9 +300,21 @@ export default function EvaluationPage() {
                               if (!s.criterionScores && criteria.length) s.criterionScores = criteria.map((_, i) => ({ criteriaIndex: i, score: 50 }));
                               const weighted = s.criterionScores ? computeWeightedScore(s.criterionScores) : s.score;
                               const isScored = reviews.some((r: any) => String(r.vendorId) === String(sub.vendorId));
+                              const isFlashing = justScored.has(sub.vendorId);
                               return (
-                                <TableRow key={sub.id} sx={isScored ? { bgcolor: 'success.50' } : {}}>
-                                  <TableCell>{sub.vendor?.companyName || 'Unknown'}</TableCell>
+                                <TableRow key={sub.id} sx={{
+                                  bgcolor: isScored ? 'success.50' : 'background.paper',
+                                  animation: isFlashing ? 'scoreFlash 1.5s ease-out' : 'none',
+                                  transition: 'background-color 0.3s',
+                                }}>
+                                  <TableCell>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                      {isScored && <Icon name="CheckCircle" sx={{ fontSize: 16, color: 'success.main' }} />}
+                                      <Typography variant="body2" fontWeight={isScored ? 600 : 400}>
+                                        {sub.vendor?.companyName || 'Unknown'}
+                                      </Typography>
+                                    </Box>
+                                  </TableCell>
                                   <TableCell>${Number(sub.lastBid ?? sub.price).toLocaleString()}</TableCell>
                                   <TableCell>
                                     {criteria.length > 0 ? (
