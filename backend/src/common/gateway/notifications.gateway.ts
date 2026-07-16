@@ -58,12 +58,14 @@ export class NotificationsGateway
   ) {}
 
   handleConnection(client: Socket) {
+    console.log(`[WebSocket] Client connecting: ${client.id}`);
     try {
       const token =
         client.handshake.auth?.token ||
         client.handshake.query?.token ||
         extractCookie(client, 'accessToken');
       if (!token) {
+        console.log(`[WebSocket] Client ${client.id} rejected: no token`);
         client.disconnect();
         return;
       }
@@ -77,7 +79,8 @@ export class NotificationsGateway
         this.userSockets.set(userId, new Set());
       }
       this.userSockets.get(userId)!.add(client.id);
-      console.log(`Client connected: ${client.id} (user: ${userId})`);
+      const totalClients = Array.from(this.userSockets.values()).reduce((sum, set) => sum + set.size, 0);
+      console.log(`[WebSocket] Client connected: ${client.id} (user: ${userId}), total: ${totalClients}`);
     } catch {
       client.disconnect();
     }
@@ -147,6 +150,7 @@ export class NotificationsGateway
   }
 
   sendBidUpdate(roundId: string, data: any) {
+    console.log(`[WebSocket] sendBidUpdate called: roundId=${roundId}, server=${!!this.server}, clients=${this.server?.engine?.clientsCount || 0}`);
     // Broadcast to room if clients joined, fallback to all connected clients
     this.server.to(`bidding:${roundId}`).emit('bid:update', data);
     this.server.emit('bid:update', data);
