@@ -1,13 +1,14 @@
-# Task Tracker — Bug Fixes Plan
+# Task Tracker — Bug Fixes & Improvements
 
-## ✅ All Fixes Complete
+## ✅ All Work Complete
 
-**All HIGH, MEDIUM, and LOW priority fixes have been implemented, tested, and pushed.**
+**All bug fixes, improvements, and features have been implemented, tested, and pushed.**
 
-- Backend: 12/12 fixes ✅
-- Frontend: 16/16 fixes ✅ (including bonus VendorsPage fix)
+- Backend: 12/12 bug fixes ✅
+- Frontend: 16/16 bug fixes ✅
+- Code quality: ErrorBoundary ✅
+- Features: Real-time bidding ✅
 - All tests pass: Backend 375/375, Frontend 181/181
-- 23 files changed, 250 insertions, 133 deletions
 
 ---
 
@@ -49,6 +50,10 @@
 
 12. ✅ **Audit log off-by-one** — Already fixed before this session (no `+ 1` in approvedCount)
 
+### Backend Additional Fixes
+13. ✅ **Remove enableImplicitConversion** — Fixed status filter bug where `Boolean("false")` returned `true`
+    - File: `main.ts`
+
 ---
 
 ## Frontend Fixes
@@ -72,7 +77,7 @@
 6. ✅ **setTimeout cleanup on unmount** — Added cleanup to 6 pages
    - Files: `EvaluationPage.tsx`, `ChangePasswordPage.tsx`, `InvitationsPage.tsx`, `VendorsPage.tsx`, `RegisterPage.tsx`, `ApprovalsPage.tsx`
 
-7. ✅ **FileUploader silent catch** — Surface upload errors to users
+7. ✅ **FileUploader silent catch** — Surface upload errors to users + render error alert
    - File: `FileUploader.tsx`
 
 8. ✅ **BiddingRoomPage null access** — Guard for `procurements.find()`
@@ -103,6 +108,13 @@
 16. ✅ **VendorsPage duplicate loading state** — Removed pre-existing duplicate `useState` declaration
     - File: `VendorsPage.tsx`
 
+### Frontend TypeScript Fixes
+17. ✅ **useRef() React 19 compatibility** — Pass `undefined` to `useRef()` in 5 files
+    - Files: `ChangePasswordPage.tsx`, `EvaluationPage.tsx`, `InvitationsPage.tsx`, `RegisterPage.tsx`, `VendorsPage.tsx`
+
+18. ✅ **FileUploader missing error state** — Added `error`/`setError` state + Alert render
+    - File: `FileUploader.tsx`
+
 ### Skipped (not real bugs)
 - **VendorAnalyticsPage index key** — Recharts static data, no reconciliation issue
 - **EvaluationPage aiDialog stale closure** — Closure refreshes every render, dialog is singleton
@@ -110,13 +122,45 @@
 
 ---
 
-## Commits
+## Code Quality Improvements
 
-| Commit | Description | Files |
-|--------|-------------|-------|
-| `7f48869` | Bug fixes across backend and frontend (HIGH + MEDIUM) | 20 files |
-| `77db1f5` | Unify inline colors with TYPE_COLORS + form reset confirmation | 6 files |
+1. ✅ **ErrorBoundary** — Added to prevent white-screen crashes across all routes
+   - Files: `ErrorBoundary.tsx` (new), `AppRoutes.tsx`
 
 ---
 
-*Last updated: Wed Jul 15 2026 — All fixes complete, tests passing, pushed to master.*
+## Features
+
+1. ✅ **Real-time bidding updates** — WebSocket events for live bid updates in Bidding Room
+   - Files: `notifications.gateway.ts`, `notifications.service.ts`, `ebidding.service.ts`, `useSocket.ts`, `BiddingRoomPage.tsx`
+
+---
+
+## Deployment Fixes
+
+1. ✅ **CORS for Docker** — Added `localhost:80` and `localhost` to allowed origins
+   - File: `main.ts`
+
+2. ✅ **Staging deployment support** — `VITE_API_BASE_URL` env var + deployment guide
+   - Files: `api.ts`, `STAGING_DEPLOY.md`
+
+---
+
+## Commits
+
+| Commit | Description |
+|--------|-------------|
+| `7f48869` | Bug fixes across backend and frontend (HIGH + MEDIUM) |
+| `77db1f5` | Unify inline colors with TYPE_COLORS + form reset confirmation |
+| `b094f55` | Mark all bug fixes as complete in task.md |
+| `c8c4c17` | Add staging deployment support |
+| `51f57ca` | Add ErrorBoundary to prevent white-screen crashes |
+| `d966d12` | Real-time bidding updates via WebSocket |
+| `2c299df` | Add localhost:80 and localhost to CORS allowed origins |
+| `786ca01` | Remove enableImplicitConversion from ValidationPipe |
+| `df00d89` | Resolve TypeScript build errors for Vercel deployment |
+| `cd9d3b0` | Render upload error alert in FileUploader |
+
+---
+
+*Last updated: Wed Jul 15 2026 — All work complete, tests passing, deployed to production.*
