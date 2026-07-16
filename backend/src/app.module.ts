@@ -76,7 +76,6 @@ import { TasksModule } from './modules/tasks/tasks.module';
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
-    NotificationsGateway,
     {
       provide: 'APP_INITIALIZER',
       useFactory: (

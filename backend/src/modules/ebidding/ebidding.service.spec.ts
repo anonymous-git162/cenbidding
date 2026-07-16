@@ -3,6 +3,7 @@ import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { EbiddingService } from './ebidding.service';
 import { PrismaService } from '../../database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationsGateway } from '../../common/gateway/notifications.gateway';
 import { AuditService } from '../audit/audit.service';
 import { mockPrisma, MockPrisma } from '../../../test/prisma-mock';
 
@@ -40,6 +41,7 @@ describe('EbiddingService', () => {
           provide: NotificationsService,
           useValue: { create: jest.fn(), createForUsers: jest.fn(), sendBidUpdate: jest.fn() },
         },
+        { provide: NotificationsGateway, useValue: { sendBidUpdate: jest.fn(), sendToUser: jest.fn(), sendNotification: jest.fn() } },
         { provide: AuditService, useValue: { log: jest.fn() } },
       ],
     }).compile();

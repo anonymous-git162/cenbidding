@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationsGateway } from '../../common/gateway/notifications.gateway';
 import { AuditService } from '../audit/audit.service';
 
 @Injectable()
@@ -16,6 +17,7 @@ export class EbiddingService {
     private prisma: PrismaService,
     private notificationsService: NotificationsService,
     private auditService: AuditService,
+    private gateway: NotificationsGateway,
   ) {}
 
   private async checkMinVendors(procurementId: string) {
@@ -233,7 +235,7 @@ export class EbiddingService {
           afterData: { bidAmount },
         });
 
-        this.notificationsService.sendBidUpdate(roundId, { roundId, vendorId: vendor.id, bidAmount, vendorName: vendor.companyName });
+        this.gateway.sendBidUpdate(roundId, { roundId, vendorId: vendor.id, bidAmount, vendorName: vendor.companyName });
         return updated;
       }
 
