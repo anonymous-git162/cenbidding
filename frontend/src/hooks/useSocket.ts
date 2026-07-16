@@ -4,6 +4,11 @@ import { useAuth } from '../contexts/AuthContext';
 
 const SOCKET_URL = import.meta.env.VITE_WS_URL || 'https://cenbidding-backend.onrender.com';
 
+function getCookie(name: string): string | undefined {
+  const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : undefined;
+}
+
 export function useSocket() {
   const { user } = useAuth();
   const socketRef = useRef<Socket | null>(null);
@@ -13,8 +18,9 @@ export function useSocket() {
   useEffect(() => {
     if (!user) return;
 
+    const token = getCookie('accessToken');
     const socket = io(SOCKET_URL, {
-      withCredentials: true,
+      auth: { token },
       transports: ['websocket', 'polling'],
     });
 

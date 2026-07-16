@@ -17,7 +17,7 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 import { Public } from '../../common/decorators/public.decorator';
 
 const COOKIE_OPTIONS = {
-  httpOnly: true,
+  httpOnly: false,
   secure: process.env.NODE_ENV === 'production',
   sameSite: 'lax' as const,
   path: '/',
