@@ -17,6 +17,7 @@ const WS_ALLOWED = [
   'http://localhost:3000',
   'http://localhost:80',
   'http://localhost',
+  'https://cenbidding.vercel.app',
   process.env.FRONTEND_URL,
 ].filter(Boolean) as string[];
 

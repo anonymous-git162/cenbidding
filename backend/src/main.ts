@@ -97,6 +97,7 @@ async function bootstrap() {
     'http://localhost:3000',
     'http://localhost:80',
     'http://localhost',
+    'https://cenbidding.vercel.app',
     frontendUrl,
   ].filter(Boolean) as string[];
 
