@@ -42,7 +42,6 @@ function extractCookie(client: Socket, name: string): string | undefined {
     },
     credentials: true,
   },
-  namespace: '/ws',
 })
 @Injectable()
 export class NotificationsGateway
