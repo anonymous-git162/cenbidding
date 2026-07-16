@@ -77,7 +77,7 @@ export class EvaluationController {
   }
 
   @Get('reviews/:procurementId')
-  @Roles(UserRole.PROCUREMENT, UserRole.EVALUATOR, UserRole.LEAD_EVALUATOR, UserRole.ADMIN)
+  @Roles(UserRole.PROCUREMENT, UserRole.EVALUATOR, UserRole.LEAD_EVALUATOR, UserRole.APPROVER, UserRole.ADMIN)
   @ApiOperation({ summary: 'Get all reviews for a procurement' })
   getReviews(@Param('procurementId') procurementId: string) {
     return this.evaluationService.getReviews(procurementId);
@@ -107,7 +107,7 @@ export class EvaluationController {
   }
 
   @Get('consolidation/:procurementId')
-  @Roles(UserRole.PROCUREMENT, UserRole.LEAD_EVALUATOR, UserRole.ADMIN)
+  @Roles(UserRole.PROCUREMENT, UserRole.LEAD_EVALUATOR, UserRole.APPROVER, UserRole.ADMIN)
   @ApiOperation({ summary: 'Get evaluation consolidation' })
   getConsolidation(@Param('procurementId') procurementId: string) {
     return this.evaluationService.getConsolidation(procurementId);
