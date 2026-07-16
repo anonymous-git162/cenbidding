@@ -15,6 +15,8 @@ import { Injectable } from '@nestjs/common';
 const WS_ALLOWED = [
   'http://localhost:5173',
   'http://localhost:3000',
+  'http://localhost:80',
+  'http://localhost',
   process.env.FRONTEND_URL,
 ].filter(Boolean) as string[];
 
@@ -145,6 +147,8 @@ export class NotificationsGateway
   }
 
   sendBidUpdate(roundId: string, data: any) {
+    // Broadcast to room if clients joined, fallback to all connected clients
     this.server.to(`bidding:${roundId}`).emit('bid:update', data);
+    this.server.emit('bid:update', data);
   }
 }
