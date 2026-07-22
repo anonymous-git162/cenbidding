@@ -71,6 +71,7 @@ describe('EbiddingController', () => {
       dto.roundId,
       vendorReq.user.id,
       dto.bidAmount,
+      dto.fileIds,
     );
     expect(result).toEqual({ id: 'bid-1', bidAmount: 500000 });
   });

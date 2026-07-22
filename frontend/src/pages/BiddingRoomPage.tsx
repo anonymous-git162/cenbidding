@@ -298,6 +298,7 @@ export default function BiddingRoomPage() {
                           <TableCell>Rank</TableCell>
                           <TableCell>Vendor</TableCell>
                           <TableCell>Bid Amount</TableCell>
+                          <TableCell>Files</TableCell>
                           <TableCell>Submitted</TableCell>
                           <TableCell>Status</TableCell>
                         </TableRow>
@@ -313,6 +314,13 @@ export default function BiddingRoomPage() {
                               <Typography variant="body2" fontWeight={600} color={idx === 0 ? 'success.main' : 'text.primary'}>
                                 {getCurrencySymbol()}{bid.bidAmount.toLocaleString()}
                               </Typography>
+                            </TableCell>
+                            <TableCell>
+                              {bid.files?.length > 0 ? bid.files.map((f: any) => (
+                                <Button key={f.id} size="small" href={`/api/files/${f.id}`} target="_blank" rel="noopener noreferrer" sx={{ textTransform: 'none', mr: 0.5 }}>
+                                  {f.fileName}
+                                </Button>
+                              )) : <Typography variant="caption" color="text.disabled">—</Typography>}
                             </TableCell>
                             <TableCell>{new Date(bid.submittedAt).toLocaleString()}</TableCell>
                             <TableCell>
@@ -353,6 +361,7 @@ export default function BiddingRoomPage() {
                       <TableHead>
                         <TableRow>
                           <TableCell>Bid Amount</TableCell>
+                          <TableCell>Files</TableCell>
                           <TableCell>Submitted</TableCell>
                           <TableCell>Status</TableCell>
                         </TableRow>
@@ -361,6 +370,13 @@ export default function BiddingRoomPage() {
                         {myBids.map((bid) => (
                           <TableRow key={bid.id}>
                             <TableCell sx={{ fontWeight: 600 }}>{getCurrencySymbol()}{bid.bidAmount.toLocaleString()}</TableCell>
+                            <TableCell>
+                              {bid.files?.length > 0 ? bid.files.map((f: any) => (
+                                <Button key={f.id} size="small" href={`/api/files/${f.id}`} target="_blank" rel="noopener noreferrer" sx={{ textTransform: 'none', mr: 0.5 }}>
+                                  {f.fileName}
+                                </Button>
+                              )) : <Typography variant="caption" color="text.disabled">—</Typography>}
+                            </TableCell>
                             <TableCell>{new Date(bid.submittedAt).toLocaleString()}</TableCell>
                             <TableCell>
                               {selectedRound.status === 'OPEN' ? <Chip label="Active" size="small" color="success" /> : <Chip label="Locked" size="small" />}

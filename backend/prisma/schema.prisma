@@ -302,6 +302,7 @@ model EbiddingResponse {
   vendorId         String   @map("vendor_id") @db.Uuid
   bidAmount        Decimal  @map("bid_amount")
   submittedAt      DateTime @default(now()) @map("submitted_at")
+  fileIds          String[] @map("file_ids")
 
   round  EbiddingRound @relation(fields: [ebiddingRoundId], references: [id])
   vendor Vendor        @relation(fields: [vendorId], references: [id])

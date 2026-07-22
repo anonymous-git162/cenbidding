@@ -51,6 +51,7 @@ export class EbiddingController {
       dto.roundId,
       req.user.id,
       dto.bidAmount,
+      dto.fileIds,
     );
   }
 

@@ -179,7 +179,7 @@ export class EbiddingService {
     return closed;
   }
 
-  async placeBid(roundId: string, vendorUserId: string, bidAmount: number) {
+  async placeBid(roundId: string, vendorUserId: string, bidAmount: number, fileIds?: string[]) {
     const round = await this.prisma.ebiddingRound.findUnique({
       where: { id: roundId },
     });
@@ -226,7 +226,7 @@ export class EbiddingService {
       if (existingBid) {
         const updated = await tx.ebiddingResponse.update({
           where: { id: existingBid.id },
-          data: { bidAmount, submittedAt: new Date() },
+          data: { bidAmount, submittedAt: new Date(), fileIds: fileIds || existingBid.fileIds },
         });
 
         await this.auditService.log({
@@ -240,7 +240,7 @@ export class EbiddingService {
       }
 
       const created = await tx.ebiddingResponse.create({
-        data: { ebiddingRoundId: roundId, vendorId: vendor.id, bidAmount },
+        data: { ebiddingRoundId: roundId, vendorId: vendor.id, bidAmount, fileIds: fileIds || [] },
       });
 
       await this.auditService.log({
@@ -290,11 +290,19 @@ export class EbiddingService {
   }
 
   async getRoundBids(roundId: string) {
-    return this.prisma.ebiddingResponse.findMany({
+    const bids = await this.prisma.ebiddingResponse.findMany({
       where: { ebiddingRoundId: roundId },
       include: { vendor: { select: { id: true, companyName: true } } },
       orderBy: { bidAmount: 'asc' },
     });
+    const allFileIds = bids.flatMap(b => b.fileIds || []);
+    if (allFileIds.length === 0) return bids;
+    const files = await this.prisma.file.findMany({
+      where: { id: { in: allFileIds } },
+      select: { id: true, fileName: true, fileSize: true },
+    });
+    const fileMap = new Map(files.map(f => [f.id, f]));
+    return bids.map(b => ({ ...b, files: (b.fileIds || []).map(id => fileMap.get(id)).filter(Boolean) }));
   }
 
   async getMyBids(roundId: string, vendorUserId: string) {
@@ -303,10 +311,18 @@ export class EbiddingService {
     });
     if (!vendor) throw new NotFoundException('Vendor not found');
 
-    return this.prisma.ebiddingResponse.findMany({
+    const bids = await this.prisma.ebiddingResponse.findMany({
       where: { ebiddingRoundId: roundId, vendorId: vendor.id },
       orderBy: { submittedAt: 'desc' },
     });
+    const allFileIds = bids.flatMap(b => b.fileIds || []);
+    if (allFileIds.length === 0) return bids;
+    const files = await this.prisma.file.findMany({
+      where: { id: { in: allFileIds } },
+      select: { id: true, fileName: true, fileSize: true },
+    });
+    const fileMap = new Map(files.map(f => [f.id, f]));
+    return bids.map(b => ({ ...b, files: (b.fileIds || []).map(id => fileMap.get(id)).filter(Boolean) }));
   }
 
   async getAllMyBids(vendorUserId: string) {
