@@ -11,10 +11,9 @@ export class PdfService {
     doc.text(`Title: ${procurement.title}`);
     doc.text(`Type: ${procurement.requestType}`);
     doc.text(`Status: ${procurement.status}`);
-    const CURRENCY_SYMBOLS: Record<string, string> = { USD: '$', THB: '฿', EUR: '€', GBP: '£', JPY: '¥', SGD: 'S$', MYR: 'RM', IDR: 'Rp' };
     if (procurement.budgetEstimate)
       doc.text(
-        `Budget: ${CURRENCY_SYMBOLS[procurement.currency || 'USD'] || '$'}${Number(procurement.budgetEstimate).toLocaleString()}`,
+        `Budget: ${procurement.currency || 'USD'} ${Number(procurement.budgetEstimate).toLocaleString()}`,
       );
     doc.moveDown();
     if (procurement.description) {
