@@ -203,7 +203,7 @@ export default function ProcurementDetailPage() {
           </Box>
         </Box>
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-          {role === 'REQUESTER' && status === 'DRAFT' && (
+          {role === 'REQUESTER' && (status === 'DRAFT' || status === 'RETURNED_FOR_REVISION') && (
             <>
               <Button variant="outlined" startIcon={<Icon name="Edit" />} onClick={() => navigate(`/procurements/${id}/edit`)}>Edit</Button>
               <Button variant="contained" startIcon={<Icon name="Send" />} onClick={() => handleAction('submit')}>Submit for Review</Button>
